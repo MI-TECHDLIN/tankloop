@@ -32,7 +32,7 @@ Transition methods enforce scope, actor role, active membership, authoritative r
 - Escalation is a separately audited event on an active critical/overdue incident. It does not claim that an external authority was contacted.
 - Reopening retains the earlier closure trail and requires repeat verified finding, new evidence or invalidated verification.
 
-The authoritative implementations are `packages/domain/lib/src/{results,work_orders,incidents}.dart` and `supabase/migrations/202611050002_commands.sql`.
+The authoritative implementations are `packages/domain/lib/src/{results,work_orders,incidents}.dart` and `supabase/migrations/202611050002_commands.sql`. The [Lab portal](lab-portal.md) extends those commands with a lab-scoped snapshot, atomic intake and idempotent receipts in `supabase/migrations/202611050005_lab_workspace.sql`.
 
 ## Tenant and public boundaries
 
@@ -45,6 +45,8 @@ All core tables have RLS. Authenticated reads require active, unexpired facility
 Public projection priorities are open confirmed findings, authorized corrective work, inspection observations, other open concerns, current reviewed evidence, then missing current evidence. An old normal test never hides an open concern. The initial demonstration freshness window is 30 days; up to 20 published test records are shown. These are explicit demo policies, not an institution's approved monitoring schedule.
 
 ## Offline and sync
+
+The durable outbox below belongs to Field. Lab retains read-only snapshots and in-tab drafts during refresh failures; its attestation and correction commands require a connected server. An uncertain lab action can retry the same in-memory event ID for its original receipt. Lab has no durable offline command queue.
 
 ```text
 Form -> atomic local draft -> immutable queued command -> scoped RPC

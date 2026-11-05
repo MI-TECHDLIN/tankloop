@@ -194,7 +194,7 @@ TankLoop is being prepared for the **Xylem Global Student Innovation Challenge 2
 
 ## Getting started
 
-The first Field and Verify slice is runnable with Flutter **3.47.9** (Dart **3.13.7**). From the repository root:
+Field and Portal (Verify, Manage and Lab) are runnable with Flutter **3.47.9** (Dart **3.13.7**). From the repository root:
 
 ```sh
 flutter pub get
@@ -219,6 +219,8 @@ Open [Field](http://127.0.0.1:8080) and [Verify](http://127.0.0.1:8081). Both st
 5. Open Verify for a dated public point record. **Water > Copy public QR link** selects a point; **Advance 1 day** and **Text-first view** are also available in Verify.
 
 Simulation instances reproduce the same baseline but do not share custom Field submissions. **Supabase mode shares Field submissions with the public page**. Follow [local backend setup](docs/development.md#local-supabase) for that path.
+
+Open [Lab](http://127.0.0.1:8081/#/lab) for generated sample, custody and result playback. Connected intake, authorized attestation and immutable corrections use a scoped Lab account and Supabase RPCs; see the [Lab workflow guide](docs/lab-portal.md).
 
 See [development commands and hosted inputs](docs/development.md), [implementation details](docs/implementation.md), and [delivery scope and known limitations](docs/delivery.md) for the current slice.
 
