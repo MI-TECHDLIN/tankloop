@@ -33,9 +33,17 @@ Anonymous request: `{"p_token":"<opaque-lowercase-hex-token>"}`. Tokens are 32-1
 
 Response: `token`, `point_label`, `facility_label`, `timezone`, `state`, `wording`, optional `action_wording`, `updated_at`, `is_simulated`, `is_current`, `concerns` and `tests`. Tests include exact indicator/method/value/units/detection limit and collection/test/review/publication times. Unknown, malformed or revoked tokens return JSON null. Service failure is distinct from a missing record in the UI.
 
-## Server-only workflow commands
+### `manager_workspace`
 
-The manager/lab screens are deferred, but the commands are implemented and exercised by database tests:
+Roles: active, scoped manager or admin. Request: `{"p_facility_id":"<facility-uuid>"}`; omit the ID to select the first authorized facility. The read-only projection returns the selected `facility`, authorized `facilities`, authenticated `actor_id`, `as_of` record clock, actual `fetched_at`, simulation metadata, and scoped systems, assets, points, templates, inspections, samples, result `records`, incidents, work orders, memberships, QR identities and audit events.
+
+Nested custody, result audit and verification requirements stay in the selected tenant/facility. The roster includes revoked/expired grants and organization-wide administrators, but no Auth emails, credentials or profiles. Membership table RLS and all mutation authority remain unchanged. Membership expiry uses actual server time even when `as_of` is a simulation clock.
+
+Manage uses this projection at `/#/manager`; the connected actions below still go through their existing guarded RPCs. A facility/account change or permission loss clears the previous workspace. Offline/stale snapshots are read-only; five-minute screen freshness is separate from sample validity. See [manager setup and workflow](development.md#manager-workspace).
+
+## Guarded workflow commands
+
+The manager and lab interfaces use these existing commands for their supported workflows. Additional Field capture and administration interfaces remain listed in [delivery scope](delivery.md).
 
 | RPC | Role and principal guards |
 | --- | --- |
@@ -56,15 +64,19 @@ Transitions accept `p_id`, `p_target`, `p_expected_version`, `p_payload`, `p_rea
 - Incident triage: `priority` and `uncertainty`; assignment: `owner_id`, `due_at`, `required_response`; verification-pending: `controls_reviewed`, `notice_reviewed`, `notice_ref`; resolution: `communication_ref`; reopening: `cause`, `evidence_ref`.
 - Plan requirements use `kind: sample` with `point_id`, `indicator`, `method`, or `kind: checklist` with `template_id`. The server applies the post-action cutoff. A laboratory incident needs all affected points and the original indicator/method covered.
 
+Manage saves verification requirements with `set_verification_plan`, then sends the returned version to `transition_incident`. These are separately audited commands: if the second command fails, the saved plan remains, the UI explains the partial outcome, and a refresh is required before retrying.
+
 There is no direct generic update endpoint for lifecycle state. Non-inspection transitions use optimistic version checks; clients must reload after an uncertain outcome before issuing another transition. Only commands with an explicit stable identity/receipt contract should be automatically retried.
 
 ## Failure mapping
 
 | SQL/API code | Client behavior |
 | --- | --- |
-| `42501`, invalid/expired Auth JWT | Permission failure; retain local work and request renewed access |
+| `42501`, invalid/expired Auth JWT | Permission failure; stop protected operations and request renewed access |
 | `40001`, `23505` | Version/idempotency conflict; retain for explicit review |
 | `22023`, `23514` | Invalid checklist/evidence/transition; retain for review |
-| Network and other service errors | Pending retry with local content retained |
+| Network and other service errors | Retain drafts/fetched records as appropriate; confirm the outcome before retrying |
 
-Full negative-path examples are in `supabase/tests/trust_boundaries.test.sql`. The repository integration test uses only client-safe credentials; trusted CI setup separately provisions its disposable account.
+The manager workspace clears private records on permission loss and never queues privileged actions. A network failure retains the last fetched records as read-only; a version conflict requires a fresh snapshot and an explicit new action. Field and Lab draft recovery are described in their workflow guides.
+
+Negative-path examples are in `supabase/tests/trust_boundaries.test.sql`, `supabase/tests/manager_workspace.test.sql` and `supabase/tests/lab_workspace.test.sql`. SDK integration tests use only client-safe credentials; trusted CI setup separately provisions disposable accounts.

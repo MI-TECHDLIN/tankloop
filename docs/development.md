@@ -44,7 +44,7 @@ supabase start
 supabase test db
 ```
 
-Startup applies the repository migrations and generated seed. `supabase status` shows the local API URL and client-safe key for `.env`. Set `TANKLOOP_MODE=supabase`, then rebuild both apps with that file. The anonymous Portal and authenticated Lab use the same URL/key as Field.
+Startup applies the repository migrations and generated seed. `supabase status` shows the local API URL and client-safe key for `.env`. Set `TANKLOOP_MODE=supabase`, then rebuild both apps with that file. The anonymous Portal and authenticated Manage/Lab use the same URL/key as Field.
 
 `supabase db reset` reapplies migrations and seed to a **fresh local database**, replacing local records and Auth users. Use it when intentionally resetting the exercise. The seeded database has a fixed simulated clock; Field and Verify both use that clock for simulated records. Membership expiry uses actual server time.
 
@@ -74,6 +74,27 @@ See [public Verify](public-verify.md) for phone-reachable demo hosting, A4 stick
 ### Laboratory workspace
 
 Open `/#/lab` on the Portal origin. Follow the [Lab workflow guide](lab-portal.md) for reviewer provisioning, sample registration, custody, results, report references, immutable corrections and retry behavior. Standalone simulation is read-only playback; commands require the connected backend and a scoped laboratory reviewer.
+
+### Manager workspace
+
+Open `/#/manager` on the Portal origin. Standalone mode projects the shared seeded simulation engine and labels every record/action as simulated. **Settings > Offline exercise** keeps the fetched records visible while pausing actions; reconnect to refresh.
+
+For connected mode, apply all migrations including `202611050011_manager_workspace.sql`. Create and confirm a separate local Auth account in Studio, then provision its scoped membership using the same trusted SQL editor as Field:
+
+```sql
+insert into public.memberships
+  (user_id, organization_id, facility_id, role, is_simulated)
+select '<YOUR_MANAGER_AUTH_USER_UUID>'::uuid, organization_id, id, 'manager', is_simulated
+from public.facilities
+order by id
+limit 1;
+```
+
+Sign in on the manager route and choose an authorized facility. Facilities exposes asset ancestry, downstream points and QR identities; Inspections shows issued checklists and submitted evidence; Samples & Results preserves exact measurements, custody and revision history; Team shows scoped grants, assignments and actor audit history. Team access is read-only; a trusted administrator provisions and changes memberships.
+
+Incident triage/assignment, interim measures, verification requests, internal escalation, work approval/acceptance, reviewed-result publication and QR revocation require an audit reason and the current snapshot. Saving a verification plan and requesting verification are separate commands; the UI reports a saved plan if the transition fails and requires a refresh. Publication preserves the laboratory reviewer's attestation.
+
+After five minutes or a version conflict, the workspace becomes read-only until refreshed. Network failures retain only the in-memory fetched snapshot; privileged actions are never queued. A facility/account change or permission failure discards the workspace. The screen freshness window uses actual fetch time and does not represent sample validity or advance the simulation clock.
 
 ### SDK integration tests
 
