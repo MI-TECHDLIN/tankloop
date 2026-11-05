@@ -1,0 +1,12 @@
+name: tankloop_design_system
+publish_to: none
+resolution: workspace
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  tankloop_domain: any
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

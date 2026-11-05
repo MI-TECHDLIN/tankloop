@@ -1,0 +1,232 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:tankloop_data/data.dart';
+import 'package:tankloop_domain/domain.dart';
+import 'package:tankloop_field/main.dart';
+import 'package:tankloop_field/runtime.dart';
+import 'package:tankloop_offline_sync/offline_sync.dart';
+
+Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
+Finder get visitNotes => find.byWidgetPredicate(
+  (widget) =>
+      widget is TextField &&
+      widget.decoration?.labelText == 'Visit notes (optional)',
+);
+
+class UnavailableRepository implements TankLoopRepository {
+  const UnavailableRepository(this.failure);
+  final RepositoryFailure failure;
+  @override
+  Future<DashboardSnapshot> today() async => throw failure;
+  @override
+  Future<SyncReceipt> submitInspection(InspectionSubmission command) async =>
+      throw failure;
+  @override
+  Future<PublicWaterRecord?> publicRecord(String token) async => throw failure;
+}
+
+void main() {
+  const simulation = AppConfig(mode: AppMode.simulation);
+
+  testWidgets(
+    'a field visit survives recreation, queues offline and gets one receipt',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final store = MemoryKeyValueStore();
+      var runtime = await FieldRuntime.create(simulation, store);
+      addTearDown(() {
+        runtime.outbox.dispose();
+        runtime.dispose();
+      });
+      final task = runtime.dashboard.inspections.firstWhere(
+        (t) => !t.isSubmitted,
+      );
+      final template = runtime.dashboard.templateFor(task);
+      final initialCaseCount = runtime.dashboard.cases.length;
+
+      await tester.pumpWidget(FieldApp(runtime: runtime));
+      await tester.pumpAndSettle();
+      expect(find.text('SIMULATED DATA · No real water tests'), findsOneWidget);
+      await tapVisible(tester, find.text('Start inspection'));
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Submit inspection'),
+            )
+            .onPressed,
+        isNull,
+      );
+      for (var i = 0; i < template.questions.length; i++) {
+        final card = find.byKey(ValueKey(template.questions[i].id));
+        await tapVisible(
+          tester,
+          find.descendant(
+            of: card,
+            matching: find.widgetWithText(ChoiceChip, i == 0 ? 'Yes' : 'No'),
+          ),
+        );
+      }
+      await tester.ensureVisible(visitNotes);
+      await tester.enterText(
+        visitNotes,
+        'Simulated visit: tank lid needs attention.',
+      );
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('Save draft'));
+      final eventId = runtime.outbox.forTask(task.id)!.command.clientEventId;
+      expect(runtime.outbox.forTask(task.id)!.state, DraftState.draft);
+
+      // Rebuild the entire app/runtime from serialized local state, like a reload.
+      await tester.pumpWidget(const SizedBox.shrink());
+      runtime.outbox.dispose();
+      runtime.dispose();
+      runtime = await FieldRuntime.create(simulation, store);
+      await tester.pumpWidget(FieldApp(runtime: runtime));
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.byTooltip('Profile'));
+      await tapVisible(tester, find.text('Pause sync'));
+      await tapVisible(tester, find.byTooltip('Today'));
+      await tapVisible(tester, find.text('Start inspection'));
+      expect(
+        tester.widget<TextField>(visitNotes).controller!.text,
+        'Simulated visit: tank lid needs attention.',
+      );
+      expect(runtime.outbox.forTask(task.id)!.command.clientEventId, eventId);
+      await tapVisible(tester, find.text('Queue inspection'));
+      expect(runtime.outbox.forTask(task.id)!.state, DraftState.pending);
+      expect(
+        runtime.dashboard.inspections
+            .singleWhere((t) => t.id == task.id)
+            .isSubmitted,
+        isFalse,
+      );
+      expect(find.text('Pending sync'), findsWidgets);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      runtime.outbox.dispose();
+      runtime.dispose();
+      runtime = await FieldRuntime.create(simulation, store);
+      await tester.pumpWidget(FieldApp(runtime: runtime));
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.byTooltip('Activity'));
+      expect(find.text('1 queued · 0 need review'), findsOneWidget);
+      await tapVisible(tester, find.text('Sync queued inspections'));
+      expect(find.text('Receipt received'), findsOneWidget);
+      expect(runtime.outbox.forTask(task.id)!.receipt!.clientEventId, eventId);
+      expect(runtime.dashboard.cases.length, initialCaseCount + 1);
+      expect(
+        runtime.dashboard.inspections
+            .singleWhere((t) => t.id == task.id)
+            .version,
+        1,
+      );
+      await tapVisible(tester, find.text('Sync queued inspections'));
+      expect(runtime.dashboard.cases.length, initialCaseCount + 1);
+
+      // The acknowledged simulation command must also survive an app restart.
+      await tester.pumpWidget(const SizedBox.shrink());
+      runtime.outbox.dispose();
+      runtime.dispose();
+      runtime = await FieldRuntime.create(simulation, store);
+      expect(runtime.dashboard.cases.length, initialCaseCount + 1);
+      expect(
+        runtime.dashboard.inspections
+            .singleWhere((t) => t.id == task.id)
+            .isSubmitted,
+        isTrue,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('all Field surfaces fit a narrow phone with enlarged text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 740);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final runtime = await FieldRuntime.create(
+      simulation,
+      MemoryKeyValueStore(),
+    );
+    addTearDown(runtime.outbox.dispose);
+    addTearDown(runtime.dispose);
+    await tester.pumpWidget(FieldApp(runtime: runtime));
+    await tester.pumpAndSettle();
+    for (final tab in ['Water', 'Cases', 'Activity', 'Profile', 'Today']) {
+      await tapVisible(tester, find.byTooltip(tab));
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: '$tab must fit the viewport',
+      );
+    }
+    await tapVisible(tester, find.text('Start inspection'));
+    expect(tester.takeException(), isNull);
+  });
+
+  test(
+    'cached assignments are account-scoped and permission failures fail closed',
+    () async {
+      const config = AppConfig(
+        mode: AppMode.supabase,
+        supabaseUrl: 'https://project.example',
+      );
+      final store = MemoryKeyValueStore();
+      final first = await FieldRuntime.create(
+        config,
+        store,
+        repository: SimulationRepository(),
+        userId: 'account-a',
+      );
+      addTearDown(first.outbox.dispose);
+      addTearDown(first.dispose);
+      const disconnected = UnavailableRepository(
+        RepositoryFailure(FailureKind.transient, 'Disconnected'),
+      );
+      final restored = await FieldRuntime.create(
+        config,
+        store,
+        repository: disconnected,
+        userId: 'account-a',
+      );
+      addTearDown(restored.outbox.dispose);
+      addTearDown(restored.dispose);
+      expect(restored.stale, isTrue);
+      expect(restored.dashboard.scope.matches(first.dashboard.scope), isTrue);
+      await expectLater(
+        FieldRuntime.create(
+          config,
+          store,
+          repository: disconnected,
+          userId: 'account-b',
+        ),
+        throwsA(isA<RepositoryFailure>()),
+      );
+      await expectLater(
+        FieldRuntime.create(
+          config,
+          store,
+          repository: const UnavailableRepository(
+            RepositoryFailure(FailureKind.permission, 'Membership revoked'),
+          ),
+          userId: 'account-a',
+        ),
+        throwsA(isA<RepositoryFailure>()),
+      );
+      expect(await store.read(first.cacheKey), isNull);
+    },
+  );
+}

@@ -1,0 +1,113 @@
+name: TankLoop checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          channel: stable
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format --output=none --set-exit-if-changed apps packages
+      - run: flutter analyze --no-pub
+      - name: Pure-Dart lifecycle and simulation tests
+        working-directory: packages/domain
+        run: dart test --reporter expanded
+      - name: Durable outbox and SQLite tests
+        working-directory: packages/offline_sync
+        run: flutter test --no-pub --reporter expanded
+      - name: Field interaction and recovery tests
+        working-directory: apps/field_app
+        run: flutter test --no-pub --reporter expanded
+      - name: Public record and responsive layout tests
+        working-directory: apps/portal_web
+        run: flutter test --no-pub --reporter expanded
+      - name: Reproduce the generated database seed
+        run: |
+          dart run packages/domain/bin/simulate.dart --format=sql > "$RUNNER_TEMP/tankloop-seed.sql"
+          diff -u supabase/seed.sql "$RUNNER_TEMP/tankloop-seed.sql"
+      - name: Build Field web
+        working-directory: apps/field_app
+        run: flutter build web --release --no-pub
+      - name: Build Verify web
+        working-directory: apps/portal_web
+        run: flutter build web --release --no-pub
+      - name: Build Field Android
+        working-directory: apps/field_app
+        run: flutter build apk --debug --no-pub
+
+  supabase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          channel: stable
+          cache: true
+      - uses: supabase/setup-cli@v1
+        with:
+          version: '3.0.0'
+      - run: flutter pub get --enforce-lockfile
+      - name: Start disposable local backend
+        run: supabase start > "$RUNNER_TEMP/supabase-start.log" 2>&1
+      - name: Apply migrations and seed from scratch
+        run: supabase db reset
+      - name: Check tenant and lifecycle trust boundaries
+        run: supabase test db
+      - name: Provision a disposable SDK test account
+        shell: python
+        run: |
+          import json, os, secrets, subprocess, urllib.request, urllib.parse
+          status = json.loads(subprocess.check_output(['supabase', 'status', '-o', 'json']))
+          url = status['API_URL']
+          assert urllib.parse.urlparse(url).hostname in ('127.0.0.1', 'localhost')
+          anon, admin = status['ANON_KEY'], status['SERVICE_ROLE_KEY']
+          password = secrets.token_urlsafe(30)
+          for value in (anon, admin, password):
+              print('::add-mask::' + value)
+          def request(path, key, body=None):
+              headers = {'apikey': key, 'Authorization': 'Bearer ' + key,
+                         'Content-Type': 'application/json', 'Prefer': 'return=representation'}
+              req = urllib.request.Request(url + path, headers=headers,
+                  data=None if body is None else json.dumps(body).encode())
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  return json.load(response)
+          email = 'ci-' + secrets.token_hex(8) + '@tankloop.invalid'
+          user = request('/auth/v1/signup', anon,
+              {'email': email, 'password': password, 'data': {'is_simulated': True}})['user']
+          facility = request('/rest/v1/facilities?select=id,organization_id&order=id&limit=1', admin)[0]
+          request('/rest/v1/memberships', admin, {'user_id': user['id'],
+              'organization_id': facility['organization_id'], 'facility_id': facility['id'],
+              'role': 'field', 'is_simulated': True})
+          values = {'TANKLOOP_TEST_URL': url, 'TANKLOOP_TEST_ANON_KEY': anon,
+                    'TANKLOOP_TEST_EMAIL': email, 'TANKLOOP_TEST_PASSWORD': password}
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write(''.join(name + '=' + value + '\n' for name, value in values.items()))
+      - name: Exercise Auth to Field receipt to anonymous public record
+        working-directory: packages/data
+        run: dart test --reporter expanded
+      - name: Stop the disposable backend
+        if: always()
+        run: supabase stop --no-backup

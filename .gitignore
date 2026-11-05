@@ -1,0 +1,30 @@
+# Local tooling and build output
+.dart_tool/
+build/
+coverage/
+.idea/
+.DS_Store
+.opencode/
+.lavish/
+*.iml
+**/ephemeral/
+**/.flutter-plugins*
+**/local.properties
+**/key.properties
+*.jks
+*.keystore
+
+# Local configuration and private source material
+.env
+.env.*
+!.env.example
+config.local.json
+**/signing_keys.json
+inspiration/
+**/inspiration/
+*Blueprint*.pdf
+*blueprint*.pdf
+
+# One workspace lockfile is committed at the root.
+apps/*/pubspec.lock
+packages/*/pubspec.lock

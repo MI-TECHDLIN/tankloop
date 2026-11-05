@@ -1,0 +1,28 @@
+name: tankloop_portal
+description: TankLoop public, dated water records.
+publish_to: 'none'
+resolution: workspace
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  go_router: ^16.2.0
+  supabase_flutter: ^2.10.0
+  tankloop_domain: any
+  tankloop_data: any
+  tankloop_design_system: any
+  tankloop_localization: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

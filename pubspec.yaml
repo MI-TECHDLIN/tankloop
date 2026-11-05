@@ -1,0 +1,15 @@
+name: tankloop
+publish_to: none
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+workspace:
+  - apps/field_app
+  - apps/portal_web
+  - packages/domain
+  - packages/data
+  - packages/offline_sync
+  - packages/shared_forms
+  - packages/design_system
+  - packages/localization
+dev_dependencies:
+  flutter_lints: ^6.0.0

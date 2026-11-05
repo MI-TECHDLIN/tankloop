@@ -127,3 +127,6 @@ flowchart TB
 
 The current repository may contain only part of this planned layout. The diagram is a target boundary, not an inventory of completed implementation.
 
+## First-slice implementation
+
+The runnable Field/Verify slice now has [implementation notes](implementation.md) covering its package boundaries, lifecycle guards, tenant/public projection and durable outbox. See [delivery scope](delivery.md) for completed checks and deferred interfaces, and [development setup](development.md) to run it.
