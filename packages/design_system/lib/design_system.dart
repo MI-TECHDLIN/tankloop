@@ -200,6 +200,101 @@ class GlassCard extends StatelessWidget {
   );
 }
 
+class FrostedSkeleton extends StatefulWidget {
+  const FrostedSkeleton({
+    super.key,
+    this.height = 16,
+    this.width,
+    this.radius = 10,
+  });
+  final double height;
+  final double? width;
+  final double radius;
+
+  @override
+  State<FrostedSkeleton> createState() => _FrostedSkeletonState();
+}
+
+class _FrostedSkeletonState extends State<FrostedSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+      controller.stop();
+    } else {
+      controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final base = Container(
+      height: widget.height,
+      width: widget.width,
+      decoration: BoxDecoration(
+        color: TankColors.navy.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(widget.radius),
+      ),
+    );
+    if (reduceMotion) return base;
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) => ShaderMask(
+        blendMode: BlendMode.srcATop,
+        shaderCallback: (bounds) => LinearGradient(
+          begin: Alignment(-1.5 + controller.value * 3, 0),
+          end: Alignment(-.5 + controller.value * 3, 0),
+          colors: [
+            TankColors.navy.withValues(alpha: .06),
+            Colors.white.withValues(alpha: .55),
+            TankColors.navy.withValues(alpha: .06),
+          ],
+        ).createShader(bounds),
+        child: child,
+      ),
+      child: base,
+    );
+  }
+}
+
+class FrostedSkeletonCard extends StatelessWidget {
+  const FrostedSkeletonCard({super.key, this.lines = 2, this.showIcon = true});
+  final int lines;
+  final bool showIcon;
+
+  @override
+  Widget build(BuildContext context) => GlassCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showIcon) ...[
+          const FrostedSkeleton(height: 32, width: 32, radius: 12),
+          const SizedBox(height: 16),
+        ],
+        const FrostedSkeleton(height: 18, width: 180),
+        for (var index = 0; index < lines; index++) ...[
+          const SizedBox(height: 12),
+          FrostedSkeleton(height: 14, width: index.isEven ? 240 : 160),
+        ],
+      ],
+    ),
+  );
+}
+
 class TankBrand extends StatelessWidget {
   const TankBrand({super.key, this.surface = 'FIELD'});
   final String surface;

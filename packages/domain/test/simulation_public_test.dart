@@ -4,6 +4,23 @@ import 'package:test/test.dart';
 import 'fixtures.dart';
 
 void main() {
+  test(
+    'manager commands preserve guarded incident and work-order lifecycles',
+    () {
+      final engine = SimulationEngine(seed: 20261101)
+        ..advance(const Duration(days: 10));
+      final incident = engine.incidents.values.first;
+      expect({
+        IncidentState.mitigation,
+        IncidentState.verificationPending,
+      }, contains(incident.state));
+      final order = engine.workOrders.values.first;
+      expect(order.state, WorkOrderState.accepted);
+      expect(order.history.every((event) => event.isSimulated), isTrue);
+      expect(incident.history.every((event) => event.isSimulated), isTrue);
+    },
+  );
+
   test('fixed seed and elapsed time reproduce the entire event log', () {
     final a = SimulationEngine()..advance(const Duration(days: 21));
     final b = SimulationEngine();
