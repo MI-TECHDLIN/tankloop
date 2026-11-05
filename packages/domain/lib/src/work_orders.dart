@@ -23,6 +23,7 @@ class WorkOrder {
     this.approvedBy,
     this.dueAt,
     this.completionEvidence,
+    this.evidence = const [],
   });
   factory WorkOrder.propose({
     required String id,
@@ -66,6 +67,7 @@ class WorkOrder {
   final String? approvedBy;
   final DateTime? dueAt;
   final String? completionEvidence;
+  final List<InspectionEvidence> evidence;
   int get version => history.length;
 
   WorkOrder transition(
@@ -74,6 +76,7 @@ class WorkOrder {
     String? assignee,
     DateTime? deadline,
     String? evidence,
+    List<InspectionEvidence> evidenceFiles = const [],
   }) {
     requireRule(
       transitions[state]!.contains(target),
@@ -109,7 +112,7 @@ class WorkOrder {
     }
     if (target == WorkOrderState.completed) {
       requireRule(
-        hasText(evidence),
+        hasText(evidence) || evidenceFiles.isNotEmpty,
         'completion_evidence',
         'Record completion evidence; this does not resolve the incident.',
       );
@@ -129,7 +132,7 @@ class WorkOrder {
         from: wireName(state),
         to: wireName(target),
         isSimulated: isSimulated,
-        evidenceIds: [?evidence],
+        evidenceIds: [?evidence, ...evidenceFiles.map((item) => item.id)],
       ),
       assigneeId: assignee ?? assigneeId,
       approvedBy: target == WorkOrderState.assigned
@@ -140,6 +143,12 @@ class WorkOrder {
           target == WorkOrderState.inProgress && state == WorkOrderState.rework
           ? null
           : evidence ?? completionEvidence,
+      evidence:
+          target == WorkOrderState.inProgress && state == WorkOrderState.rework
+          ? const []
+          : evidenceFiles.isEmpty
+          ? this.evidence
+          : evidenceFiles,
     );
   }
 
@@ -153,6 +162,7 @@ class WorkOrder {
     'approved_by': approvedBy,
     'due_at': dueAt?.toUtc().toIso8601String(),
     'completion_evidence': completionEvidence,
+    'evidence': evidence.map((item) => item.toJson()).toList(),
     'version': version,
     'is_simulated': isSimulated,
   };

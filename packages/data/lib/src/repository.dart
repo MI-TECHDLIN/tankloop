@@ -389,7 +389,7 @@ class SupabaseTankLoopRepository extends ManagerRepository
         'Sign in before uploading photo evidence.',
       );
     }
-    final path = '$userId/${evidence.id}.jpg';
+    final path = '$userId/inspections/${evidence.id}.jpg';
     try {
       await client.storage
           .from('inspection-evidence')

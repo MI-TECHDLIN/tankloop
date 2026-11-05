@@ -231,17 +231,17 @@ class InspectionOutbox extends ChangeNotifier {
           .toList();
       for (final entry in ready) {
         final attempt = entry.attempts + 1;
+        var command = entry.command;
         await _serial(
           () => _replace(
             OutboxEntry(
-              command: entry.command,
+              command: command,
               state: DraftState.pending,
               attempts: attempt,
             ),
           ),
         );
         try {
-          var command = entry.command;
           if (repository case final EvidenceUploader uploader) {
             for (final item in command.evidence) {
               if (item.uploadedPath == null) {
@@ -262,7 +262,7 @@ class InspectionOutbox extends ChangeNotifier {
           await _serial(
             () => _replace(
               OutboxEntry(
-                command: entry.command,
+                command: command,
                 state: DraftState.synced,
                 attempts: attempt,
                 receipt: receipt,
@@ -279,7 +279,7 @@ class InspectionOutbox extends ChangeNotifier {
           await _serial(
             () => _replace(
               OutboxEntry(
-                command: entry.command,
+                command: command,
                 state: permanent ? DraftState.blocked : DraftState.pending,
                 attempts: attempt,
                 nextAttemptAt: permanent ? null : _clock().add(delay),

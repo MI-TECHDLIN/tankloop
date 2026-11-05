@@ -110,6 +110,16 @@ set local role anon;
 select throws_ok($$select * from test_results$$,'42501',null,'Anonymous readers cannot enumerate results');
 select throws_ok($$select * from public_records$$,'42501',null,'Anonymous readers cannot enumerate point tokens');
 select throws_ok($$select * from inspections$$,'42501',null,'Anonymous readers cannot access inspection notes');
+select is((select public from storage.buckets where id = 'inspection-evidence'),false,'Inspection evidence bucket is private by default');
+select ok(
+  (select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'field members upload own evidence') = 1,
+  'Private evidence upload policy is present'
+);
+select ok(
+  (select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'field members read own evidence') = 1,
+  'Private evidence read policy is present'
+);
+select throws_ok($$insert into storage.objects (bucket_id,name,owner,metadata) values ('inspection-evidence','90000000-0000-4000-8000-000000000001/inspections/anonymous.jpg',auth.uid(),'{}')$$,'42501',null,'Anonymous users cannot write private evidence');
 select throws_ok($$select submit_inspection('a1000000-0000-4000-8000-000000000008','70000000-0000-4000-8000-000000000004',0,'{}','','2026-11-10T11:00:00Z')$$,'42501',null,'Anonymous mutation is denied');
 select is(lookup_public_record('not-a-token'),null::jsonb,'Malformed public token reveals nothing');
 select is(lookup_public_record(repeat('f',32)),null::jsonb,'Unknown public token reveals nothing');
