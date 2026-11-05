@@ -39,7 +39,7 @@ jobs:
       - name: Field interaction and recovery tests
         working-directory: apps/field_app
         run: flutter test --no-pub --reporter expanded
-      - name: Public record and responsive layout tests
+      - name: Public record, laboratory states and responsive interaction tests
         working-directory: apps/portal_web
         run: flutter test --no-pub --reporter expanded
       - name: Reproduce the generated database seed
@@ -49,7 +49,7 @@ jobs:
       - name: Build Field web
         working-directory: apps/field_app
         run: flutter build web --release --no-pub
-      - name: Build Verify web
+      - name: Build Verify, Manage and Lab web
         working-directory: apps/portal_web
         run: flutter build web --release --no-pub
       - name: Build Field Android
@@ -76,7 +76,7 @@ jobs:
         run: supabase db reset
       - name: Check tenant and lifecycle trust boundaries
         run: supabase test db
-      - name: Provision a disposable SDK test account
+      - name: Provision scoped Field and Lab SDK test accounts
         shell: python
         run: |
           import json, os, secrets, subprocess, urllib.request, urllib.parse
@@ -101,11 +101,20 @@ jobs:
           request('/rest/v1/memberships', admin, {'user_id': user['id'],
               'organization_id': facility['organization_id'], 'facility_id': facility['id'],
               'role': 'field', 'is_simulated': True})
+          lab_email = 'ci-lab-' + secrets.token_hex(8) + '@tankloop.invalid'
+          lab_password = secrets.token_urlsafe(30)
+          print('::add-mask::' + lab_password)
+          lab_user = request('/auth/v1/signup', anon,
+              {'email': lab_email, 'password': lab_password, 'data': {'is_simulated': True}})['user']
+          request('/rest/v1/memberships', admin, {'user_id': lab_user['id'],
+              'organization_id': facility['organization_id'], 'facility_id': facility['id'],
+              'role': 'lab', 'is_simulated': True})
           values = {'TANKLOOP_TEST_URL': url, 'TANKLOOP_TEST_ANON_KEY': anon,
-                    'TANKLOOP_TEST_EMAIL': email, 'TANKLOOP_TEST_PASSWORD': password}
+                    'TANKLOOP_TEST_EMAIL': email, 'TANKLOOP_TEST_PASSWORD': password,
+                    'TANKLOOP_TEST_LAB_EMAIL': lab_email, 'TANKLOOP_TEST_LAB_PASSWORD': lab_password}
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write(''.join(name + '=' + value + '\n' for name, value in values.items()))
-      - name: Exercise Auth to Field receipt to anonymous public record
+      - name: Exercise Auth, Field receipts, Lab revisions and public records
         working-directory: packages/data
         run: dart test --reporter expanded
       - name: Stop the disposable backend

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
+import 'lab/lab_routes.dart';
 import 'manager_dashboard.dart';
 import 'public_point.dart';
 
@@ -58,12 +59,19 @@ class _PortalAppState extends State<PortalApp> {
       widget.config.mode == AppMode.simulation
       ? SimulationRepository(seed: widget.config.seed, day: widget.config.day)
       : null;
+  late final LabRepository labRepository = simulation == null
+      ? SupabaseLabRepository(Supabase.instance.client)
+      : SimulationLabRepository(engine: simulation!.engine);
   late final GoRouter router = GoRouter(
     redirect: (_, state) => state.uri.path == '/' && simulation != null
         ? '/point/${simulation!.engine.featuredToken}?seed=${widget.config.seed}&day=${widget.config.day}'
         : null,
     routes: [
       GoRoute(path: '/', builder: (_, _) => const TokenEntry()),
+      ...labRoutes(
+        labRepository,
+        authClient: simulation == null ? Supabase.instance.client : null,
+      ),
       GoRoute(
         path: '/manager',
         builder: (_, _) => simulation == null
@@ -121,7 +129,7 @@ class _PortalAppState extends State<PortalApp> {
   Widget build(BuildContext context) => ProviderScope(
     overrides: [portalConfigProvider.overrideWithValue(widget.config)],
     child: MaterialApp.router(
-      title: 'TankLoop Verify',
+      title: 'TankLoop',
       debugShowCheckedModeBanner: false,
       theme: tankLoopTheme(),
       routerConfig: router,

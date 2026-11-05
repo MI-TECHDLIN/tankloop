@@ -22,7 +22,7 @@ From either app directory:
 flutter run -d web-server --web-port 8080 --dart-define-from-file=/absolute/path/to/tankloop/.env
 ```
 
-Use port `8081` for Verify. Available defines:
+Use port `8081` for Portal (Verify, Manage and Lab). Available defines:
 
 | Define | Default / purpose |
 | --- | --- |
@@ -44,7 +44,7 @@ supabase start
 supabase test db
 ```
 
-Startup applies the three migrations and generated seed. `supabase status` shows the local API URL and client-safe key for `.env`. Set `TANKLOOP_MODE=supabase`, then rebuild both apps with that file. The anonymous Portal uses the same URL/key as Field.
+Startup applies the repository migrations and generated seed. `supabase status` shows the local API URL and client-safe key for `.env`. Set `TANKLOOP_MODE=supabase`, then rebuild both apps with that file. The anonymous Portal and authenticated Lab use the same URL/key as Field.
 
 `supabase db reset` reapplies migrations and seed to a **fresh local database**, replacing local records and Auth users. Use it when intentionally resetting the exercise. The seeded database has a fixed simulated clock; Field and Verify both use that clock for simulated records. Membership expiry uses actual server time.
 
@@ -67,9 +67,13 @@ Use **Water > Copy public QR link** to open the exact point in Verify. A `Yes` r
 
 On an Android emulator, use `http://10.0.2.2:54321` for the local API and a reachable Portal URL. The debug build allows local development traffic. Hosted builds should use HTTPS.
 
-### SDK integration test
+### Laboratory workspace
 
-The opt-in integration test uses the actual Auth and PostgREST endpoints with client-safe credentials, submits one inspection, retries its receipt and checks the anonymous public projection. It accepts only a localhost API and a simulated facility.
+Open `/#/lab` on the Portal origin. Follow the [Lab workflow guide](lab-portal.md) for reviewer provisioning, sample registration, custody, results, report references, immutable corrections and retry behavior. Standalone simulation is read-only playback; commands require the connected backend and a scoped laboratory reviewer.
+
+### SDK integration tests
+
+The opt-in integration tests use actual Auth and PostgREST endpoints with client-safe credentials. Field submits an inspection, retries its receipt and checks the anonymous public projection. Lab registers samples through a Field account, receives/rejects them through a separate Lab account, enters a result, attests a linked report and verifies immutable corrections and receipt replay. These mutation tests accept only a localhost API and a simulated facility.
 
 Export these values locally without committing them:
 
@@ -78,10 +82,12 @@ export TANKLOOP_TEST_URL=http://127.0.0.1:54321
 export TANKLOOP_TEST_ANON_KEY='<LOCAL_ANON_KEY>'
 export TANKLOOP_TEST_EMAIL='<YOUR_LOCAL_AUTH_EMAIL>'
 export TANKLOOP_TEST_PASSWORD='<YOUR_LOCAL_AUTH_PASSWORD>'
+export TANKLOOP_TEST_LAB_EMAIL='<YOUR_LOCAL_REVIEWER_EMAIL>'
+export TANKLOOP_TEST_LAB_PASSWORD='<YOUR_LOCAL_REVIEWER_PASSWORD>'
 (cd packages/data && dart test --reporter expanded)
 ```
 
-The fixture account needs the field membership above and an unsubmitted inspection. Each successful run consumes one scheduled inspection; reset the disposable database or choose another fixture when exhausted. CI creates a fresh account and database for every run. This test is explicitly skipped when its environment is absent.
+The Field fixture needs the membership above and an unsubmitted inspection. Each successful Field run consumes one scheduled inspection; reset the disposable database or choose another fixture when exhausted. The Lab account needs an active `lab` membership in the same facility and creates fresh samples per run. CI creates separate accounts and a fresh database for every run. Each integration test is explicitly skipped when its required environment is absent.
 
 ## Checks and builds
 
@@ -91,6 +97,7 @@ From the repository root:
 dart format --output=none --set-exit-if-changed apps packages
 flutter analyze --no-pub
 (cd packages/domain && dart test --reporter expanded)
+(cd packages/data && dart test --reporter expanded)
 (cd packages/offline_sync && flutter test --no-pub --reporter expanded)
 (cd apps/field_app && flutter test --no-pub --reporter expanded)
 (cd apps/portal_web && flutter test --no-pub --reporter expanded)
@@ -103,9 +110,9 @@ supabase test db
 (cd apps/field_app && flutter build apk --debug --no-pub)
 ```
 
-Pass `--dart-define-from-file=/absolute/path/to/.env` when building Supabase mode. Serve each app's `build/web` directory with a static HTTP server. The route is `/#/point/<opaque-token>`; hash routing does not need path rewrites. A deployed subdirectory also needs Flutter's `--base-href=/subdirectory/`.
+Pass `--dart-define-from-file=/absolute/path/to/.env` when building Supabase mode. Serve each app's `build/web` directory with a static HTTP server. Portal routes include `/#/point/<opaque-token>`, `/#/manager` and `/#/lab`; hash routing does not need path rewrites. A deployed subdirectory also needs Flutter's `--base-href=/subdirectory/`.
 
-`.github/workflows/ci.yml` runs formatting, analysis, domain/offline/widget tests, both release web builds, an Android debug build, migration/seed application, pgTAP and the authenticated SDK integration.
+`.github/workflows/ci.yml` runs formatting, analysis, domain/offline/widget tests, both release web builds, an Android debug build, migration/seed application, pgTAP and the authenticated Field/Lab SDK integrations.
 
 ## Hosted inputs
 
