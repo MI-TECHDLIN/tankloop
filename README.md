@@ -83,6 +83,95 @@ tankloop/
     submission/              # public submission materials
 ```
 
+### Architecture diagrams
+
+The diagrams below describe the **planned** architecture; they do not claim that every surface or integration is already built. See the [full architecture notes](docs/architecture.md) for boundaries, state machines, and data model detail.
+
+```mermaid
+flowchart LR
+  clients["Flutter clients<br/>Field Android · Manage web · Verify public web · Lab web"]
+  repos["Typed repositories<br/>and domain commands"]
+  local["Local-first layer<br/>Riverpod · Drift · sync outbox"]
+  supabase["Supabase<br/>Auth · Postgres + RLS · Storage<br/>Edge Functions · Realtime"]
+  partners["External partners<br/>qualified labs · notification providers<br/>authorized institution systems"]
+  clients --> repos --> local --> supabase --> partners
+```
+
+```mermaid
+flowchart LR
+  save["LOCAL SAVE"] --> outbox["OUTBOX"] --> upload["UPLOAD + AUTH"] --> ack["SERVER ACK"] --> refresh["REFRESH"]
+```
+
+```mermaid
+stateDiagram-v2
+  state "Result" as Result {
+    [*] --> collected
+    collected --> received
+    received --> valid
+    received --> rejected
+    valid --> tested
+    tested --> reviewed
+    reviewed --> published
+    published --> superseded
+  }
+  state "Work order" as WorkOrder {
+    [*] --> proposed
+    proposed --> approval_pending
+    approval_pending --> assigned
+    assigned --> in_progress
+    in_progress --> completed
+    completed --> accepted
+    completed --> rework
+  }
+  state "Incident" as Incident {
+    [*] --> reported
+    reported --> triaged
+    triaged --> incident_assigned
+    incident_assigned --> mitigation_work
+    mitigation_work --> verification_pending
+    verification_pending --> resolved
+    resolved --> reopened
+  }
+```
+
+```mermaid
+erDiagram
+  ORGANIZATION ||--o{ FACILITY : owns
+  FACILITY ||--o{ WATER_SYSTEM : contains
+  WATER_SYSTEM ||--o{ ASSET : has
+  WATER_SYSTEM ||--o{ SAMPLING_POINT : exposes
+  SAMPLING_POINT ||--o{ INSPECTION : receives
+  SAMPLING_POINT ||--o{ SAMPLE : produces
+  SAMPLE ||--o{ CUSTODY_EVENT : records
+  SAMPLE ||--o{ TEST_RESULT : yields
+  TEST_RESULT ||--o{ INCIDENT : may_trigger
+  INCIDENT ||--o{ WORK_ORDER : assigns
+  INCIDENT ||--o{ VERIFICATION_REQUIREMENT : requires
+  FACILITY ||--o{ PUBLIC_RECORD : publishes
+```
+
+```mermaid
+flowchart TB
+  root["tankloop/"] --> apps["apps/"]
+  root --> packages["packages/"]
+  root --> supa["supabase/"]
+  root --> docs["docs/"]
+  apps --> field["field_app/"]
+  apps --> portal["portal_web/"]
+  packages --> design["design_system/"]
+  packages --> domain["domain/"]
+  packages --> data["data/"]
+  packages --> sync["offline_sync/"]
+  packages --> forms["shared_forms/"]
+  packages --> i18n["localization/"]
+  supa --> migrations["migrations/"]
+  supa --> functions["functions/"]
+  supa --> tests["tests/"]
+  docs --> submission["submission/"]
+  classDef planned fill:#fff0df,stroke:#9c5b13,color:#102a43
+  class root,apps,packages,supa,docs,field,portal,design,domain,data,sync,forms,i18n,migrations,functions,tests,submission planned
+```
+
 ## Project status and roadmap
 
 This repository is an active challenge prototype and design proposal, not a production water-quality service. The current priority is a dependable vertical demonstration with clearly labeled simulated records and explicit trust boundaries.
