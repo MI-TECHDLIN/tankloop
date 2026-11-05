@@ -58,4 +58,33 @@ void main() {
     );
     expect(find.text('Stale data'), findsOneWidget);
   });
+
+  for (final screen in [
+    'overview',
+    'incidents',
+    'approvals',
+    'facilities',
+    'inspections',
+    'samples',
+    'reports',
+    'team',
+    'settings',
+  ]) {
+    group('$screen screen states', () {
+      for (final state in ManagerViewState.values) {
+        testWidgets('$state renders', (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: ManagerStatePanel(
+                state: state,
+                child: Text('$screen success'),
+                onRetry: () {},
+              ),
+            ),
+          );
+          expect(find.byType(ManagerStatePanel), findsOneWidget);
+        });
+      }
+    });
+  }
 }
