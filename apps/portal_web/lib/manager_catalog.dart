@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
+import 'manager_screen_states.dart';
 
 class ManagerCatalogScreen extends StatelessWidget {
   const ManagerCatalogScreen({
@@ -44,10 +45,7 @@ class ManagerCatalogScreen extends StatelessWidget {
       children: [
         SectionHeading(title),
         if (rows.isEmpty)
-          const NoticeCard(
-            title: 'Nothing in scope',
-            message: 'Authoritative records will appear here when available.',
-          )
+          const ManagerStatePanel(state: ManagerViewState.empty)
         else
           ...rows.map(
             (row) => Padding(

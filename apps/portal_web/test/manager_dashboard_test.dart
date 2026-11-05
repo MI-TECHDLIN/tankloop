@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_portal/manager_dashboard.dart';
+import 'package:tankloop_portal/manager_screen_states.dart';
 
 void main() {
   testWidgets('manager dashboard exposes scoped operational signals', (
@@ -35,5 +36,26 @@ void main() {
     expect(find.byType(FrostedSkeleton), findsWidgets);
     await tester.pump(const Duration(seconds: 2));
     expect(find.byType(FrostedSkeletonCard), findsWidgets);
+  });
+
+  testWidgets('manager screen state panel covers non-success states', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ManagerStatePanel(state: ManagerViewState.denied, onRetry: () {}),
+      ),
+    );
+    expect(find.text('Permission required'), findsOneWidget);
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ManagerStatePanel(state: ManagerViewState.offline),
+      ),
+    );
+    expect(find.text('Offline'), findsOneWidget);
+    await tester.pumpWidget(
+      const MaterialApp(home: ManagerStatePanel(state: ManagerViewState.stale)),
+    );
+    expect(find.text('Stale data'), findsOneWidget);
   });
 }
