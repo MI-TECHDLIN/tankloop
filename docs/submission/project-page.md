@@ -34,7 +34,7 @@ TankLoop is not a sensor, laboratory, treatment system, or regulator. It does no
 5. **Verify:** a follow-up sample and review are linked to the incident; completed repair alone cannot close it.
 6. **Communicate:** a public QR record shows a dated, limited status and explicitly identifies missing, outdated, unverified, or simulated information.
 
-The project demonstration uses **simulated data only**, visibly labeled as simulated. No demo record is evidence that real water was tested or that a facility is safe.
+The live physical demonstration uses **simulated data only**, visibly labeled as simulated. No demonstration record is evidence that real water was tested or that a facility is safe.
 
 ## Who it serves
 
@@ -79,4 +79,3 @@ This entry is a prototype and design proposal. It has no basis for claiming that
 - agreed sampling methods, reviewer authorization, and operational partners.
 
 <!-- Blueprint p.19–20, p.21, p.23–24: metrics, research gates, risks, and post-hackathon validation remain open. -->
-

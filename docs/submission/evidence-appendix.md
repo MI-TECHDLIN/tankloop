@@ -2,7 +2,7 @@
 
 <!-- Blueprint p.24 identifies the source list; p.21 defines research gates; p.2 defines evidence labels. -->
 
-This appendix should accompany the public project page and recorded demo. It should make clear which statements are source-backed, which are design decisions, and which remain research gates. It must not turn simulated demo records into evidence of tested water.
+This appendix should accompany the public project page and live physical demonstration. It should make clear which statements are source-backed, which are design decisions, and which remain research gates. It must not turn simulated demonstration records into evidence of tested water.
 
 ## 1. Sources cited in the blueprint
 
@@ -34,13 +34,13 @@ These are validation activities, not completed evidence:
 
 ## 3. Evidence classification matrix
 
-### Simulated for the demo
+### Simulated for the live demonstration
 
 - Facility, asset, inspection, sample, custody event, laboratory result, incident, work order, follow-up, timestamps, actors, photos, and QR record.
-- Any named organization, resident, laboratory, or facility shown in the recording.
+- Any named organization, resident, laboratory, or facility shown during the demonstration.
 - Any elapsed-time, completion, assignment, or public-comprehension number shown in the UI.
 
-Simulation must be visible in the recording and on the public-facing demo. These records demonstrate workflow behavior only.
+Simulation must be visibly labeled during the demonstration and on the public-facing project materials. These records demonstrate workflow behavior only.
 
 ### Designed or proposed
 
@@ -73,7 +73,6 @@ Simulation must be visible in the recording and on the public-facing demo. These
 - Confirm official Xylem rules, eligibility, required page fields, and the 20 November 2026, 21:00 UTC deadline.
 - Replace team placeholders only with consented names and roles.
 - Add exact source metadata and attribution/licensing notes.
-- Check every screenshot and recording frame for the `SIMULATED DEMO DATA` label.
+- Check the physical demonstration materials and public-facing screens for the `SIMULATED DEMO DATA` label.
 - Confirm public pages expose no private reporter details, precise private locations, unreviewed attachments, credentials, or secrets.
 - Preserve the distinction between source-backed material, design decisions, and research gates in the final appendix.
-
