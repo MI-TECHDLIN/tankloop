@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:tankloop_domain/domain.dart';
+import 'manager_controller.dart';
+import 'manager_screen_states.dart';
 import 'manager_widgets.dart';
 
 class ManagerIncidentsScreen extends StatelessWidget {
-  const ManagerIncidentsScreen({
-    super.key,
-    required this.incidents,
-    required this.onAdvance,
-  });
-  final List<IncidentRecord> incidents;
-  final Future<void> Function(IncidentRecord, IncidentState) onAdvance;
+  const ManagerIncidentsScreen({super.key, required this.controller});
+  final ManagerController controller;
   @override
-  Widget build(BuildContext context) =>
-      ManagerIncidentList(incidents: incidents, onAdvance: onAdvance);
+  Widget build(BuildContext context) => ManagerScreenFrame(
+    title: 'Incidents',
+    controller: controller,
+    isEmpty: (data) => data.incidents.isEmpty,
+    emptyMessage: 'No incident records are available in this facility.',
+    builder: (_, data) => ManagerIncidentList(
+      incidents: data.incidents,
+      controller: controller,
+      data: data,
+    ),
+  );
 }

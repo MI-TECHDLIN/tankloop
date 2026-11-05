@@ -143,6 +143,9 @@ class DashboardSnapshot {
           label: a['label'] as String,
           parentId: a['parent_asset_id'] as String?,
           capacityLitres: a['capacity_litres'] as int?,
+          retiredAt: a['retired_at'] == null
+              ? null
+              : DateTime.parse(a['retired_at'] as String).toUtc(),
           isSimulated: a['is_simulated'] as bool,
         );
       }).toList(),

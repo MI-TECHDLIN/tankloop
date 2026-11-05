@@ -224,6 +224,8 @@ Open [Lab](http://127.0.0.1:8081/#/lab) for generated sample, custody and result
 
 For the physical demonstration, [generate printable A4 QR stickers](docs/public-verify.md) from the simulator's water points. Verify also supports private anonymous concerns, shareable text-first links and printable dated records.
 
+Open [Manage](http://127.0.0.1:8081/#/manager) for facility/network details, submitted inspections, sample/result provenance, scoped team assignments and guarded response actions. Connected mode supports manager/admin sign-in and authorized facility selection; see [manager setup and workflow](docs/development.md#manager-workspace).
+
 See [development commands and hosted inputs](docs/development.md), [implementation details](docs/implementation.md), and [delivery scope and known limitations](docs/delivery.md) for the current slice.
 
 ## Submission materials

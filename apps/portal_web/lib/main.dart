@@ -62,6 +62,9 @@ class _PortalAppState extends State<PortalApp> {
   late final LabRepository labRepository = simulation == null
       ? SupabaseLabRepository(Supabase.instance.client)
       : SimulationLabRepository(engine: simulation!.engine);
+  late final ManagerWorkspaceRepository managerRepository = simulation == null
+      ? SupabaseManagerRepository(Supabase.instance.client)
+      : SimulationManagerRepository(engine: simulation!.engine);
   // Public scans do not inherit a staff session or an expired laboratory JWT.
   late final SupabaseClient? publicClient = simulation == null
       ? SupabaseClient(widget.config.supabaseUrl, widget.config.anonKey)
@@ -78,12 +81,10 @@ class _PortalAppState extends State<PortalApp> {
       ),
       GoRoute(
         path: '/manager',
-        builder: (_, _) => simulation == null
-            ? const RecordUnavailable(
-                title: 'Manager view unavailable',
-                message: 'Sign in to open the scoped manager workspace.',
-              )
-            : ManagerDashboard(repository: simulation!),
+        builder: (_, _) => ManagerDashboard(
+          repository: managerRepository,
+          authClient: simulation == null ? Supabase.instance.client : null,
+        ),
       ),
       GoRoute(
         path: '/point/:token',

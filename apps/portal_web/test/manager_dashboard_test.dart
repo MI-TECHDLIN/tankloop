@@ -3,88 +3,54 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_portal/manager_dashboard.dart';
-import 'package:tankloop_portal/manager_screen_states.dart';
+import 'package:tankloop_portal/manager_widgets.dart';
+import 'manager/manager_test_support.dart';
 
 void main() {
-  testWidgets('manager dashboard exposes scoped operational signals', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ManagerDashboard(
-          repository: SimulationRepository(seed: 20261101, day: 10),
+  testWidgets(
+    'dashboard navigation opens actual records in all four expanded screens',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repository = SimulationManagerRepository();
+      final data = await repository.load();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: tankLoopTheme(),
+          home: ManagerDashboard(repository: repository),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Operational overview'), findsOneWidget);
-    expect(find.text('Evidence completeness'), findsOneWidget);
-    expect(find.text('SIMULATED DATA · No real water tests'), findsOneWidget);
-  });
-
-  testWidgets('manager loading uses frosted skeletons with reduced motion', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MediaQuery(
-        data: const MediaQueryData(disableAnimations: true),
-        child: MaterialApp(home: ManagerLoadingSkeleton(selected: 3)),
-      ),
-    );
-
-    expect(find.byType(FrostedSkeleton), findsWidgets);
-    await tester.pump(const Duration(seconds: 2));
-    expect(find.byType(FrostedSkeletonCard), findsWidgets);
-  });
-
-  testWidgets('manager screen state panel covers non-success states', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ManagerStatePanel(state: ManagerViewState.denied, onRetry: () {}),
-      ),
-    );
-    expect(find.text('Permission required'), findsOneWidget);
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ManagerStatePanel(state: ManagerViewState.offline),
-      ),
-    );
-    expect(find.text('Offline'), findsOneWidget);
-    await tester.pumpWidget(
-      const MaterialApp(home: ManagerStatePanel(state: ManagerViewState.stale)),
-    );
-    expect(find.text('Stale data'), findsOneWidget);
-  });
-
-  for (final screen in [
-    'overview',
-    'incidents',
-    'approvals',
-    'facilities',
-    'inspections',
-    'samples',
-    'reports',
-    'team',
-    'settings',
-  ]) {
-    group('$screen screen states', () {
-      for (final state in ManagerViewState.values) {
-        testWidgets('$state renders', (tester) async {
-          await tester.pumpWidget(
-            MaterialApp(
-              home: ManagerStatePanel(
-                state: state,
-                child: Text('$screen success'),
-                onRetry: () {},
-              ),
-            ),
-          );
-          expect(find.byType(ManagerStatePanel), findsOneWidget);
-        });
+      expect(find.text('Operational overview'), findsOneWidget);
+      expect(find.text('Evidence completeness'), findsOneWidget);
+      expect(find.text('SIMULATED DATA · No real water tests'), findsOneWidget);
+      for (final (label, index) in [
+        ('Facilities', 1),
+        ('Inspections', 3),
+        ('Samples & Results', 4),
+        ('Team', 7),
+      ]) {
+        await managerTap(
+          tester,
+          find.descendant(
+            of: find.byType(NavigationDrawer),
+            matching: find.text(label),
+          ),
+        );
+        expect(managerContent(index, data), findsOneWidget);
+        await managerTap(tester, managerContent(index, data));
+        expect(find.text('Back to list'), findsOneWidget);
+        expect(find.byType(ManagerDetail), findsWidgets);
+        expect(find.text('Scoped manager · facility access'), findsNothing);
+        expect(
+          find.textContaining('evidence status requires review'),
+          findsNothing,
+        );
+        expect(tester.takeException(), isNull);
       }
-    });
-  }
+    },
+  );
 }
