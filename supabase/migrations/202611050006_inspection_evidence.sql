@@ -1,7 +1,14 @@
 -- Field photos are private evidence, never public QR content.
-insert into storage.buckets (id, name, public)
-values ('inspection-evidence', 'inspection-evidence', false)
-on conflict (id) do update set public = false;
+-- Ensure the inspection-evidence bucket exists and is private.
+do $$
+begin
+  if not exists (select 1 from storage.buckets where id = 'inspection-evidence') then
+    insert into storage.buckets (id, name, public)
+    values ('inspection-evidence', 'inspection-evidence', false);
+  else
+    update storage.buckets set public = false where id = 'inspection-evidence';
+  end if;
+end $$;
 
 create policy "field members upload own evidence"
 on storage.objects for insert to authenticated
