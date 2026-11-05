@@ -40,13 +40,17 @@ The hierarchy is organization -> facility -> water system -> assets -> sampling 
 
 All core tables have RLS. Authenticated reads require active, unexpired facility membership (or organization-wide admin membership). Client roles have no generic table writes. Scoped `SECURITY DEFINER` RPCs fix their search path, derive the actor from `auth.uid()`, verify roles and expected versions, and commit mutations and audit together. There are no service-role credentials in either application.
 
-`lookup_public_record` is the only anonymous surface. It returns point/facility labels, state wording, dated published tests and open concerns. It omits staff/reporter identity, visit notes, internal IDs, report references, raw attachments and coordinates. Unknown or revoked QR tokens return no record; a token's point identity cannot be changed or unrevoked.
+The anonymous read boundary returns only point/facility labels, state wording, dated published tests and open concerns. `lookup_public_point` adds an explicit `found`/`missing`/`revoked` envelope and a point-scoped pending-review flag; `lookup_public_record` retains its original null-for-unavailable contract. Both omit staff/reporter identity, visit notes, internal IDs, report references, raw attachments and coordinates. A token's point identity cannot be changed or unrevoked.
+
+`submit_public_concern` accepts private resident input, derives scope and provenance from the printed token, and atomically records an unverified incident, audit and idempotent receipt. Contact requires consent; private reads require manager/admin membership. Point-wide throttling uses actual server time, even for simulated records. Verify uses a separate sessionless client, so staff sign-in cannot leak into public scans. See [public Verify and sticker generation](public-verify.md).
 
 Public projection priorities are open confirmed findings, authorized corrective work, inspection observations, other open concerns, current reviewed evidence, then missing current evidence. An old normal test never hides an open concern. The initial demonstration freshness window is 30 days; up to 20 published test records are shown. These are explicit demo policies, not an institution's approved monitoring schedule.
 
 ## Offline and sync
 
 The durable outbox below belongs to Field. Lab retains read-only snapshots and in-tab drafts during refresh failures; its attestation and correction commands require a connected server. An uncertain lab action can retry the same in-memory event ID for its original receipt. Lab has no durable offline command queue.
+
+Verify retains only an in-page snapshot during refresh failures. Its concern form has no durable save or upload queue; an unchanged retry checks the same receipt identity. Standalone simulated concerns last only for the open point session. Text-first mode reduces rendering effects but still downloads Flutter.
 
 ```text
 Form -> atomic local draft -> immutable queued command -> scoped RPC

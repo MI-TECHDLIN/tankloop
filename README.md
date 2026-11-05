@@ -222,6 +222,8 @@ Simulation instances reproduce the same baseline but do not share custom Field s
 
 Open [Lab](http://127.0.0.1:8081/#/lab) for generated sample, custody and result playback. Connected intake, authorized attestation and immutable corrections use a scoped Lab account and Supabase RPCs; see the [Lab workflow guide](docs/lab-portal.md).
 
+For the physical demonstration, [generate printable A4 QR stickers](docs/public-verify.md) from the simulator's water points. Verify also supports private anonymous concerns, shareable text-first links and printable dated records.
+
 See [development commands and hosted inputs](docs/development.md), [implementation details](docs/implementation.md), and [delivery scope and known limitations](docs/delivery.md) for the current slice.
 
 ## Submission materials

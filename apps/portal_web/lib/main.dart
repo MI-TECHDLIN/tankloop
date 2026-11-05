@@ -62,6 +62,10 @@ class _PortalAppState extends State<PortalApp> {
   late final LabRepository labRepository = simulation == null
       ? SupabaseLabRepository(Supabase.instance.client)
       : SimulationLabRepository(engine: simulation!.engine);
+  // Public scans do not inherit a staff session or an expired laboratory JWT.
+  late final SupabaseClient? publicClient = simulation == null
+      ? SupabaseClient(widget.config.supabaseUrl, widget.config.anonKey)
+      : null;
   late final GoRouter router = GoRouter(
     redirect: (_, state) => state.uri.path == '/' && simulation != null
         ? '/point/${simulation!.engine.featuredToken}?seed=${widget.config.seed}&day=${widget.config.day}'
@@ -96,15 +100,18 @@ class _PortalAppState extends State<PortalApp> {
               message: 'Use a simulation day between 0 and 365.',
             );
           }
-          final repository = simulation == null
-              ? SupabaseTankLoopRepository(Supabase.instance.client)
-              : SimulationRepository(seed: seed, day: day);
+          final PublicPointRepository repository = simulation == null
+              ? SupabasePublicPointRepository(publicClient!)
+              : SimulationPublicPointRepository(
+                  engine: SimulationRepository(seed: seed, day: day).engine,
+                );
           return PublicPointPage(
             key: ValueKey('${state.pathParameters['token']}:$seed:$day'),
             repository: repository,
             token: state.pathParameters['token']!,
             simulatedDay: simulation == null ? null : day,
-            seed: seed,
+            seed: simulation == null ? null : seed,
+            initialTextFirst: state.uri.queryParameters['view'] == 'text',
             onAdvance: simulation == null || day == 365
                 ? null
                 : () => context.go(
@@ -122,6 +129,7 @@ class _PortalAppState extends State<PortalApp> {
   @override
   void dispose() {
     router.dispose();
+    publicClient?.dispose();
     super.dispose();
   }
 

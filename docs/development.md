@@ -67,6 +67,10 @@ Use **Water > Copy public QR link** to open the exact point in Verify. A `Yes` r
 
 On an Android emulator, use `http://10.0.2.2:54321` for the local API and a reachable Portal URL. The debug build allows local development traffic. Hosted builds should use HTTPS.
 
+### Public Verify and printable QR stickers
+
+See [public Verify](public-verify.md) for phone-reachable demo hosting, A4 sticker regeneration, text-first/print/share controls, private anonymous concern reporting and session-only limitations.
+
 ### Laboratory workspace
 
 Open `/#/lab` on the Portal origin. Follow the [Lab workflow guide](lab-portal.md) for reviewer provisioning, sample registration, custody, results, report references, immutable corrections and retry behavior. Standalone simulation is read-only playback; commands require the connected backend and a scoped laboratory reviewer.
