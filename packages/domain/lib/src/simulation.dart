@@ -91,6 +91,78 @@ class SimulationEngine {
   final observationEvents = <DomainEvent>[];
   final _receipts = <String, String>{};
 
+  void managerAdvanceIncident(String incidentId, IncidentState target) {
+    final incident = incidents[incidentId];
+    requireRule(
+      incident != null,
+      'incident_not_found',
+      'Incident was not found.',
+    );
+    final current = incident!;
+    final context = _context(
+      current.scope,
+      Role.manager,
+      'Manager workspace action: ${wireName(target)}.',
+    );
+    final update = switch (target) {
+      IncidentState.triaged => IncidentUpdate(
+        priority: current.priority ?? Priority.urgent,
+        uncertainty:
+            current.uncertainty ??
+            'Scope is being confirmed from available evidence.',
+      ),
+      IncidentState.assigned => IncidentUpdate(
+        ownerId: actorFor(current.scope, Role.field).id,
+        dueAt: now.add(const Duration(days: 3)),
+        requiredResponse: 'Inspect the affected asset and record evidence.',
+      ),
+      IncidentState.mitigation => IncidentUpdate(
+        actionEvidence: 'simulation://incident/$incidentId/interim-measure',
+      ),
+      IncidentState.verificationPending => IncidentUpdate(
+        actionEvidence:
+            current.actionEvidence ??
+            'simulation://incident/$incidentId/interim-measure',
+        controlsReviewed: true,
+        noticeReviewed: true,
+        plan: VerificationPlan(
+          pointIds: current.pointIds,
+          checklistIds: const [],
+          indicator: Indicator.eColi,
+          method: 'Membrane filtration (simulation)',
+          notBefore: now,
+        ),
+      ),
+      _ => const IncidentUpdate(),
+    };
+    incidents[incidentId] = current.transition(target, context, update);
+  }
+
+  void managerAdvanceWorkOrder(String workOrderId, WorkOrderState target) {
+    final order = workOrders[workOrderId];
+    requireRule(
+      order != null,
+      'work_order_not_found',
+      'Work order was not found.',
+    );
+    final current = order!;
+    final context = _context(
+      current.scope,
+      Role.manager,
+      'Manager workspace action: ${wireName(target)}.',
+    );
+    workOrders[workOrderId] = current.transition(
+      target,
+      context,
+      assignee: target == WorkOrderState.assigned
+          ? actorFor(current.scope, Role.field).id
+          : null,
+      deadline: target == WorkOrderState.assigned
+          ? now.add(const Duration(days: 3))
+          : null,
+    );
+  }
+
   List<DomainEvent> get auditEvents =>
       [
         ...observationEvents,

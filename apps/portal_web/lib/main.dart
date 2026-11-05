@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
+import 'manager_dashboard.dart';
 import 'public_point.dart';
 
 Future<void> main() async {
@@ -63,6 +64,15 @@ class _PortalAppState extends State<PortalApp> {
         : null,
     routes: [
       GoRoute(path: '/', builder: (_, _) => const TokenEntry()),
+      GoRoute(
+        path: '/manager',
+        builder: (_, _) => simulation == null
+            ? const RecordUnavailable(
+                title: 'Manager view unavailable',
+                message: 'Sign in to open the scoped manager workspace.',
+              )
+            : ManagerDashboard(repository: simulation!),
+      ),
       GoRoute(
         path: '/point/:token',
         builder: (context, state) {
