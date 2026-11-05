@@ -60,11 +60,6 @@ The initial measurement plan focuses on workflow reliability and comprehension r
 
 These metrics are design proposals, not measured outcomes. TankLoop will not combine them into a single safety score.
 
-## Team
-
-**Team of 3:** [Name] · [Role] · [Name] · [Role] · [Name] · [Role]  
-Team eligibility and challenge requirements should be confirmed against the official challenge rules before publication.
-
 ## Limitations and next steps
 
 This entry is a prototype and design proposal. It has no basis for claiming that any facility’s water is safe, that a simulated result is real, or that the workflow satisfies local regulatory requirements. A real deployment would require:

@@ -192,14 +192,6 @@ Real deployment would additionally require operational partners, agreed sampling
 
 TankLoop is being prepared for the **Xylem Global Student Innovation Challenge 2026**. The project page, live physical demonstration, and evidence appendix distinguish source-backed context, design decisions, research gates, and simulated records. See [`docs/submission/`](docs/submission/) for the current public-facing materials.
 
-## Team of 3
-
-- **[Name]** — [role]
-- **[Name]** — [role]
-- **[Name]** — [role]
-
-Replace placeholders only with consented team details and after confirming the official challenge requirements.
-
 ## Getting started
 
 Project setup and development instructions are being added in the repository setup documentation. Once available, start there for environment prerequisites, dependency installation, local services, and validation commands. This README intentionally does not invent commands that are not yet present.

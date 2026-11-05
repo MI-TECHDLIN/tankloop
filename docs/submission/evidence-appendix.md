@@ -71,7 +71,6 @@ Simulation must be visibly labeled during the demonstration and on the public-fa
 ## 5. Publication checklist
 
 - Confirm official Xylem rules, eligibility, required page fields, and the 20 November 2026, 21:00 UTC deadline.
-- Replace team placeholders only with consented names and roles.
 - Add exact source metadata and attribution/licensing notes.
 - Check the physical demonstration materials and public-facing screens for the `SIMULATED DEMO DATA` label.
 - Confirm public pages expose no private reporter details, precise private locations, unreviewed attachments, credentials, or secrets.
