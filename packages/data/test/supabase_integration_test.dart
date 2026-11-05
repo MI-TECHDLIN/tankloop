@@ -6,6 +6,7 @@ import 'package:supabase/supabase.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:test/test.dart';
+import 'package:uuid/uuid.dart';
 
 void main() {
   final env = Platform.environment;
@@ -135,6 +136,80 @@ void main() {
       expect(
         await public.publicRecord('00000000000000000000000000000000'),
         isNull,
+      );
+      expect(publicClient.auth.currentSession, isNull);
+
+      final verify = SupabasePublicPointRepository(publicClient);
+      final publicBefore = await verify.lookup(token);
+      expect(publicBefore.record!.toJson(), after.toJson());
+      final concern = PublicConcernSubmission(
+        eventId: const Uuid().v4(),
+        token: token,
+        category: ConcernCategory.mismatch,
+        description:
+            'SIMULATED private public-QR concern. No physical water observation.',
+        contact: 'private-sdk-reporter@example.invalid',
+        contactConsent: true,
+      );
+      final concernReceipt = await verify.submitConcern(concern);
+      final concernRetry = await verify.submitConcern(concern);
+      expect(concernReceipt.eventId, concern.eventId);
+      expect(concernReceipt.receivedAt, dashboard.asOf);
+      expect(concernReceipt.isSimulated, isTrue);
+      expect(concernRetry.receivedAt, concernReceipt.receivedAt);
+      final publicAfter = (await verify.lookup(token)).record!;
+      expect(
+        publicAfter.concerns.length,
+        publicBefore.record!.concerns.length + 1,
+      );
+      expect(
+        publicAfter.concerns.any(
+          (item) => item.source == EvidenceSource.residentReport,
+        ),
+        isTrue,
+      );
+      expect(
+        publicAfter.tests.map((item) => item.toJson()),
+        publicBefore.record!.tests.map((item) => item.toJson()),
+      );
+      expect(
+        publicAfter.toJson().toString(),
+        isNot(contains(concern.description)),
+      );
+      expect(
+        publicAfter.toJson().toString(),
+        isNot(contains(concern.contact!)),
+      );
+      await expectLater(
+        verify.submitConcern(
+          PublicConcernSubmission(
+            eventId: concern.eventId,
+            token: token,
+            category: ConcernCategory.smell,
+            description: 'Changed content cannot reuse a public receipt.',
+          ),
+        ),
+        throwsA(
+          isA<PublicRequestFailure>().having(
+            (error) => error.kind,
+            'kind',
+            PublicFailureKind.conflict,
+          ),
+        ),
+      );
+      await expectLater(
+        publicClient.from('public_concerns').select(),
+        throwsA(
+          isA<PostgrestException>().having(
+            (error) => error.code,
+            'code',
+            '42501',
+          ),
+        ),
+      );
+      expect(
+        (await verify.lookup('f' * 32)).status,
+        PublicLookupStatus.missing,
       );
       expect(publicClient.auth.currentSession, isNull);
     },

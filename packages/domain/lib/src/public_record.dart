@@ -41,6 +41,9 @@ class PublicTest {
   final DateTime reviewedAt;
   final DateTime publishedAt;
   final bool isSimulated;
+  String get valueText => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toString();
   String get exactFinding {
     if (indicator == Indicator.hydrogenSulfide) {
       return 'H₂S screening indicator ${value > 0 ? 'detected' : 'not detected'} in this sample on ${isoDate(collectedAt)}. This does not establish E. coli presence or absence.';
@@ -48,7 +51,7 @@ class PublicTest {
     if (value == 0) {
       return 'No ${indicator.label} detected in this sample on ${isoDate(collectedAt)}; other hazards were not assessed.';
     }
-    return '${indicator.label} detected in this sample on ${isoDate(collectedAt)} (${value.toStringAsFixed(value == value.roundToDouble() ? 0 : 1)} ${units.label}); other hazards were not assessed.';
+    return '${indicator.label} detected in this sample on ${isoDate(collectedAt)} ($valueText ${units.label}); other hazards were not assessed.';
   }
 
   Map<String, Object?> toJson() => {
