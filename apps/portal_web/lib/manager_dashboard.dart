@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_domain/domain.dart';
+import 'manager_catalog.dart';
 
 class ManagerDashboard extends StatefulWidget {
   const ManagerDashboard({super.key, required this.repository});
@@ -21,28 +22,41 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
     actionMessage = null;
   });
 
-  void advanceIncident(IncidentRecord incident, IncidentState target) {
+  Future<void> advanceIncident(
+    IncidentRecord incident,
+    IncidentState target,
+  ) async {
     try {
-      widget.repository.engine.managerAdvanceIncident(incident.id, target);
+      await widget.repository.transitionIncident(
+        id: incident.id,
+        target: target,
+        expectedVersion: incident.version,
+        reason: 'Manager workspace action',
+      );
       setState(() {
         actionMessage =
             'Incident updated through the guarded domain transition.';
         snapshot = widget.repository.today();
       });
-    } on RuleViolation catch (error) {
-      setState(() => actionMessage = error.message);
+    } on Object catch (error) {
+      setState(() => actionMessage = error.toString());
     }
   }
 
-  void advanceWorkOrder(WorkOrder order, WorkOrderState target) {
+  Future<void> advanceWorkOrder(WorkOrder order, WorkOrderState target) async {
     try {
-      widget.repository.engine.managerAdvanceWorkOrder(order.id, target);
+      await widget.repository.transitionWorkOrder(
+        id: order.id,
+        target: target,
+        expectedVersion: order.version,
+        reason: 'Manager workspace action',
+      );
       setState(() {
         actionMessage = 'Work order updated through the guarded approval flow.';
         snapshot = widget.repository.today();
       });
-    } on RuleViolation catch (error) {
-      setState(() => actionMessage = error.message);
+    } on Object catch (error) {
+      setState(() => actionMessage = error.toString());
     }
   }
 
@@ -98,8 +112,8 @@ class _ManagerShell extends StatelessWidget {
   final ValueChanged<int> onSelected;
   final String? actionMessage;
   final VoidCallback onRefresh;
-  final void Function(IncidentRecord, IncidentState) onIncident;
-  final void Function(WorkOrder, WorkOrderState) onWorkOrder;
+  final Future<void> Function(IncidentRecord, IncidentState) onIncident;
+  final Future<void> Function(WorkOrder, WorkOrderState) onWorkOrder;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +145,7 @@ class _ManagerShell extends StatelessWidget {
           NavigationRail(
             selectedIndex: selected,
             onDestinationSelected: onSelected,
-            labelType: NavigationRailLabelType.all,
+            labelType: NavigationRailLabelType.selected,
             leading: const Padding(
               padding: EdgeInsets.all(16),
               child: TankBrand(surface: 'MANAGER'),
@@ -142,8 +156,20 @@ class _ManagerShell extends StatelessWidget {
                 label: Text('Overview'),
               ),
               NavigationRailDestination(
+                icon: Icon(Icons.business_outlined),
+                label: Text('Facilities'),
+              ),
+              NavigationRailDestination(
                 icon: Icon(Icons.warning_amber_outlined),
                 label: Text('Incidents'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.fact_check_outlined),
+                label: Text('Inspections'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.science_outlined),
+                label: Text('Samples & Results'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.assignment_outlined),
@@ -152,6 +178,10 @@ class _ManagerShell extends StatelessWidget {
               NavigationRailDestination(
                 icon: Icon(Icons.assessment_outlined),
                 label: Text('Reports'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.group_outlined),
+                label: Text('Team'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.settings_outlined),
@@ -225,18 +255,36 @@ class _ManagerShell extends StatelessWidget {
                         onAdvance: onIncident,
                       ),
                     ] else if (selected == 1) ...[
+                      ManagerCatalogScreen(
+                        title: 'Facilities',
+                        snapshot: snapshot,
+                        kind: 'facilities',
+                      ),
+                    ] else if (selected == 2) ...[
                       SectionHeading('Incident workspace'),
                       _IncidentList(
                         incidents: incidents,
                         onAdvance: onIncident,
                       ),
-                    ] else if (selected == 2) ...[
+                    ] else if (selected == 3) ...[
+                      ManagerCatalogScreen(
+                        title: 'Inspections',
+                        snapshot: snapshot,
+                        kind: 'inspections',
+                      ),
+                    ] else if (selected == 4) ...[
+                      ManagerCatalogScreen(
+                        title: 'Samples & Results',
+                        snapshot: snapshot,
+                        kind: 'samples',
+                      ),
+                    ] else if (selected == 5) ...[
                       SectionHeading('Work-order approvals'),
                       _WorkOrderList(
                         orders: workOrders,
                         onAdvance: onWorkOrder,
                       ),
-                    ] else if (selected == 3) ...[
+                    ] else if (selected == 6) ...[
                       SectionHeading('Reports'),
                       GlassCard(
                         child: Column(
@@ -253,6 +301,18 @@ class _ManagerShell extends StatelessWidget {
                           ],
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      const StatusPill(
+                        'Stale data warning: compare as-of time before acting',
+                        icon: Icons.schedule,
+                        caution: true,
+                      ),
+                    ] else if (selected == 7) ...[
+                      ManagerCatalogScreen(
+                        title: 'Team',
+                        snapshot: snapshot,
+                        kind: 'team',
+                      ),
                     ] else ...[
                       SectionHeading('Settings'),
                       const NoticeCard(
@@ -260,6 +320,12 @@ class _ManagerShell extends StatelessWidget {
                         message:
                             'Manager actions are limited to the selected facility and require an authoritative receipt in production.',
                         icon: Icons.lock_outline,
+                      ),
+                      const NoticeCard(
+                        title: 'Offline and permission states',
+                        message:
+                            'When the service is offline, stale, or access is denied, drafts remain visible but authoritative transitions stay disabled.',
+                        icon: Icons.cloud_off_outlined,
                       ),
                     ],
                   ],
@@ -307,7 +373,7 @@ class _MetricCard extends StatelessWidget {
 class _IncidentList extends StatelessWidget {
   const _IncidentList({required this.incidents, required this.onAdvance});
   final List<IncidentRecord> incidents;
-  final void Function(IncidentRecord, IncidentState) onAdvance;
+  final Future<void> Function(IncidentRecord, IncidentState) onAdvance;
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,7 +451,7 @@ class _IncidentList extends StatelessWidget {
 class _WorkOrderList extends StatelessWidget {
   const _WorkOrderList({required this.orders, required this.onAdvance});
   final List<WorkOrder> orders;
-  final void Function(WorkOrder, WorkOrderState) onAdvance;
+  final Future<void> Function(WorkOrder, WorkOrderState) onAdvance;
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,

@@ -195,13 +195,37 @@ class DashboardSnapshot {
   }
 }
 
-abstract interface class TankLoopRepository {
+abstract class TankLoopRepository {
+  const TankLoopRepository();
   Future<DashboardSnapshot> today();
   Future<SyncReceipt> submitInspection(InspectionSubmission command);
   Future<PublicWaterRecord?> publicRecord(String token);
 }
 
-class SimulationRepository implements TankLoopRepository {
+abstract class ManagerRepository extends TankLoopRepository {
+  const ManagerRepository();
+  Future<int> transitionIncident({
+    required String id,
+    required IncidentState target,
+    required int expectedVersion,
+    Map<String, Object?> payload = const {},
+    required String reason,
+  });
+  Future<int> transitionWorkOrder({
+    required String id,
+    required WorkOrderState target,
+    required int expectedVersion,
+    Map<String, Object?> payload = const {},
+    required String reason,
+  });
+  Future<int> escalateIncident({
+    required String id,
+    required int expectedVersion,
+    required String reason,
+  });
+}
+
+class SimulationRepository extends ManagerRepository {
   SimulationRepository({int seed = 20261101, int day = 10})
     : engine = SimulationEngine(seed: seed)..advance(Duration(days: day));
   final SimulationEngine engine;
@@ -282,9 +306,72 @@ class SimulationRepository implements TankLoopRepository {
   @override
   Future<PublicWaterRecord?> publicRecord(String token) async =>
       engine.publicRecord(token);
+
+  @override
+  Future<int> transitionIncident({
+    required String id,
+    required IncidentState target,
+    required int expectedVersion,
+    Map<String, Object?> payload = const {},
+    required String reason,
+  }) async {
+    final incident = engine.incidents[id];
+    if (incident == null || incident.version != expectedVersion) {
+      throw const RepositoryFailure(
+        FailureKind.conflict,
+        'This incident changed on the server. Refresh before acting.',
+      );
+    }
+    engine.managerAdvanceIncident(id, target);
+    return engine.incidents[id]!.version;
+  }
+
+  @override
+  Future<int> transitionWorkOrder({
+    required String id,
+    required WorkOrderState target,
+    required int expectedVersion,
+    Map<String, Object?> payload = const {},
+    required String reason,
+  }) async {
+    final order = engine.workOrders[id];
+    if (order == null || order.version != expectedVersion) {
+      throw const RepositoryFailure(
+        FailureKind.conflict,
+        'This work order changed on the server. Refresh before acting.',
+      );
+    }
+    engine.managerAdvanceWorkOrder(id, target);
+    return engine.workOrders[id]!.version;
+  }
+
+  @override
+  Future<int> escalateIncident({
+    required String id,
+    required int expectedVersion,
+    required String reason,
+  }) async {
+    final incident = engine.incidents[id];
+    if (incident == null || incident.version != expectedVersion) {
+      throw const RepositoryFailure(
+        FailureKind.conflict,
+        'This incident changed on the server. Refresh before acting.',
+      );
+    }
+    engine.incidents[id] = incident.escalate(
+      CommandContext(
+        actor: engine.actorFor(incident.scope, Role.manager),
+        at: engine.now,
+        eventId: 'simulation-escalation-${incident.id}-${incident.version}',
+        serverConfirmed: true,
+        reason: 'Simulated: $reason',
+      ),
+    );
+    return engine.incidents[id]!.version;
+  }
 }
 
-class SupabaseTankLoopRepository implements TankLoopRepository {
+class SupabaseTankLoopRepository extends ManagerRepository {
   const SupabaseTankLoopRepository(this.client);
   final SupabaseClient client;
   @override
@@ -401,6 +488,56 @@ class SupabaseTankLoopRepository implements TankLoopRepository {
       return value == null
           ? null
           : PublicWaterRecord.fromJson(value as Map<String, dynamic>);
+    } on PostgrestException catch (error) {
+      throw _mapFailure(error);
+    }
+  }
+
+  @override
+  Future<int> transitionIncident({
+    required String id,
+    required IncidentState target,
+    required int expectedVersion,
+    Map<String, Object?> payload = const {},
+    required String reason,
+  }) => _rpcVersion('transition_incident', {
+    'p_id': id,
+    'p_target': wireName(target),
+    'p_expected_version': expectedVersion,
+    'p_payload': payload,
+    'p_reason': reason,
+  });
+
+  @override
+  Future<int> transitionWorkOrder({
+    required String id,
+    required WorkOrderState target,
+    required int expectedVersion,
+    Map<String, Object?> payload = const {},
+    required String reason,
+  }) => _rpcVersion('transition_work_order', {
+    'p_id': id,
+    'p_target': wireName(target),
+    'p_expected_version': expectedVersion,
+    'p_payload': payload,
+    'p_reason': reason,
+  });
+
+  @override
+  Future<int> escalateIncident({
+    required String id,
+    required int expectedVersion,
+    required String reason,
+  }) => _rpcVersion('escalate_incident', {
+    'p_id': id,
+    'p_expected_version': expectedVersion,
+    'p_reason': reason,
+  });
+
+  Future<int> _rpcVersion(String name, Map<String, Object?> params) async {
+    try {
+      final value = await client.rpc(name, params: params);
+      return value as int;
     } on PostgrestException catch (error) {
       throw _mapFailure(error);
     }
