@@ -510,36 +510,37 @@ class FloatingNav extends StatelessWidget {
   Widget build(BuildContext context) => SafeArea(
     top: false,
     child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
       child: Center(
         heightFactor: 1,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: const BoxConstraints(maxWidth: 520),
           child: GlassCard(
-            radius: 36,
-            padding: const EdgeInsets.all(8),
+            radius: 28,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             child: Row(
               children: List.generate(
                 icons.length,
                 (index) => Expanded(
                   child: Semantics(
                     selected: selected == index,
+                    label: labels[index],
                     child: Tooltip(
                       message: labels[index],
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(24),
                         onTap: () => onSelected(index),
                         child: Container(
                           constraints: const BoxConstraints(minHeight: 56),
                           padding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 2,
+                            vertical: 10,
+                            horizontal: 4,
                           ),
                           decoration: BoxDecoration(
                             color: selected == index
                                 ? TankColors.navy
                                 : Colors.transparent,
-                            borderRadius: BorderRadius.circular(28),
+                            borderRadius: BorderRadius.circular(24),
                           ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -551,19 +552,23 @@ class FloatingNav extends StatelessWidget {
                                     : TankColors.muted,
                                 size: 22,
                               ),
-                              if (selected == index)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    labels[index],
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                              const SizedBox(height: 2),
+                              Text(
+                                labels[index],
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: selected == index
+                                      ? Colors.white
+                                      : TankColors.muted,
+                                  fontSize: 10,
+                                  fontWeight: selected == index
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  letterSpacing: 0.2,
                                 ),
+                              ),
                             ],
                           ),
                         ),

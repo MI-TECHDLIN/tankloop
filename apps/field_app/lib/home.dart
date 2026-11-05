@@ -53,7 +53,7 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 960),
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 144),
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
