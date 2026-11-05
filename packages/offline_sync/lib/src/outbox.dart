@@ -128,6 +128,7 @@ class InspectionOutbox extends ChangeNotifier {
     required Map<String, InspectionAnswer> answers,
     required String notes,
     required DateTime observedAt,
+    List<InspectionEvidence> evidence = const [],
   }) => _serial(() async {
     requireRule(
       task.scope.matches(scope),
@@ -149,6 +150,7 @@ class InspectionOutbox extends ChangeNotifier {
       observedAt: observedAt,
       answers: answers,
       notes: notes,
+      evidence: evidence,
       isSimulated: task.isSimulated,
     );
     await _replace(OutboxEntry(command: command));
@@ -169,6 +171,44 @@ class InspectionOutbox extends ChangeNotifier {
           OutboxEntry(command: entry.command, state: DraftState.pending),
         );
       });
+
+  Future<void> markEvidenceUploaded(
+    String taskId,
+    String evidenceId,
+    String uploadedPath,
+  ) => _serial(() async {
+    final entry = forTask(taskId);
+    if (entry == null) return;
+    final evidence = entry.command.evidence
+        .map(
+          (item) => item.id == evidenceId
+              ? item.copyWith(uploadedPath: uploadedPath)
+              : item,
+        )
+        .toList();
+    final command = InspectionSubmission(
+      clientEventId: entry.command.clientEventId,
+      taskId: entry.command.taskId,
+      scope: entry.command.scope,
+      templateId: entry.command.templateId,
+      expectedVersion: entry.command.expectedVersion,
+      observedAt: entry.command.observedAt,
+      answers: entry.command.answers,
+      notes: entry.command.notes,
+      evidence: evidence,
+      isSimulated: entry.command.isSimulated,
+    );
+    await _replace(
+      OutboxEntry(
+        command: command,
+        state: entry.state,
+        attempts: entry.attempts,
+        nextAttemptAt: entry.nextAttemptAt,
+        error: entry.error,
+        receipt: entry.receipt,
+      ),
+    );
+  });
 
   Future<void> sync(
     TankLoopRepository repository, {
@@ -201,7 +241,17 @@ class InspectionOutbox extends ChangeNotifier {
           ),
         );
         try {
-          final receipt = await repository.submitInspection(entry.command);
+          var command = entry.command;
+          if (repository case final EvidenceUploader uploader) {
+            for (final item in command.evidence) {
+              if (item.uploadedPath == null) {
+                final uploaded = await uploader.uploadEvidence(item);
+                await markEvidenceUploaded(command.taskId, item.id, uploaded);
+                command = forTask(command.taskId)!.command;
+              }
+            }
+          }
+          final receipt = await repository.submitInspection(command);
           requireRule(
             receipt.clientEventId == entry.command.clientEventId &&
                 receipt.inspectionId == entry.command.taskId &&

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:supabase/supabase.dart';
 import 'package:tankloop_domain/domain.dart';
 
@@ -374,9 +375,41 @@ class SimulationRepository extends ManagerRepository {
   }
 }
 
-class SupabaseTankLoopRepository extends ManagerRepository {
+class SupabaseTankLoopRepository extends ManagerRepository
+    implements EvidenceUploader {
   const SupabaseTankLoopRepository(this.client);
   final SupabaseClient client;
+
+  @override
+  Future<String> uploadEvidence(InspectionEvidence evidence) async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) {
+      throw const RepositoryFailure(
+        FailureKind.permission,
+        'Sign in before uploading photo evidence.',
+      );
+    }
+    final path = '$userId/${evidence.id}.jpg';
+    try {
+      await client.storage
+          .from('inspection-evidence')
+          .upload(
+            path,
+            File(evidence.localPath),
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: true,
+            ),
+          );
+      return path;
+    } on StorageException catch (_) {
+      throw const RepositoryFailure(
+        FailureKind.transient,
+        'Photo evidence could not be uploaded. It remains saved on this device.',
+      );
+    }
+  }
+
   @override
   Future<DashboardSnapshot> today() async {
     if (client.auth.currentUser == null) {

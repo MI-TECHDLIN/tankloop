@@ -8,7 +8,9 @@ import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_offline_sync/offline_sync.dart';
 import 'home.dart';
 import 'inspection.dart';
+import 'qr_scan.dart';
 import 'runtime.dart';
+import 'loading.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -128,9 +130,7 @@ class _FieldBootstrapState extends State<FieldBootstrap> {
                             child: const Text('Retry'),
                           ),
                         )
-                      : const CircularProgressIndicator(
-                          semanticsLabel: 'Loading assigned water points',
-                        ),
+                      : const FieldLoadingSkeleton(),
                 ),
               ),
             ),
@@ -157,6 +157,7 @@ class _FieldAppState extends State<FieldApp> {
         builder: (_, state) =>
             InspectionPage(taskId: state.pathParameters['id']!),
       ),
+      GoRoute(path: '/scan', builder: (_, _) => const QrScanPage()),
     ],
     errorBuilder: (context, _) => TankBackdrop(
       child: Scaffold(

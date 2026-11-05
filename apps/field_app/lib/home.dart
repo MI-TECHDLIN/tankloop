@@ -66,6 +66,12 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
                             ),
                             const SizedBox(width: 8),
                             IconButton.filledTonal(
+                              tooltip: 'Scan water point QR',
+                              onPressed: () => context.push('/scan'),
+                              icon: const Icon(Icons.qr_code_scanner_rounded),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filledTonal(
                               tooltip: 'Profile and exercise controls',
                               onPressed: () => setState(() => selected = 4),
                               icon: const Icon(Icons.person_outline_rounded),

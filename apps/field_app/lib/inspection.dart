@@ -1,13 +1,16 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:tankloop_localization/localization.dart';
 import 'package:tankloop_offline_sync/offline_sync.dart';
 import 'package:tankloop_shared_forms/shared_forms.dart';
+import 'package:uuid/uuid.dart';
 import 'home.dart';
 import 'runtime.dart';
 
@@ -24,6 +27,8 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
   bool saving = false;
   bool submitting = false;
   String? error;
+  List<InspectionEvidence> evidence = [];
+  final picker = ImagePicker();
   int saveGeneration = 0;
   @override
   void initState() {
@@ -31,6 +36,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     final entry = ref.read(runtimeProvider).outbox.forTask(widget.taskId);
     answers = {...?entry?.command.answers};
     notes = TextEditingController(text: entry?.command.notes ?? '');
+    evidence = [...?entry?.command.evidence];
   }
 
   @override
@@ -51,6 +57,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
         task: task,
         answers: answers,
         notes: notes.text,
+        evidence: evidence,
         observedAt: task.isSimulated
             ? runtime.dashboard.asOf
             : DateTime.now().toUtc(),
@@ -67,6 +74,35 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     } finally {
       if (mounted && generation == saveGeneration) {
         setState(() => saving = false);
+      }
+    }
+  }
+
+  Future<void> captureEvidence(InspectionTask task) async {
+    try {
+      final photo = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 78,
+        maxWidth: 1800,
+      );
+      if (photo == null || !mounted) return;
+      setState(() {
+        evidence = [
+          ...evidence,
+          InspectionEvidence(
+            id: const Uuid().v4(),
+            localPath: photo.path,
+            capturedAt: DateTime.now().toUtc(),
+          ),
+        ];
+      });
+      await save(task);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => error =
+              'Photo evidence could not be captured. Your inspection draft is unchanged.',
+        );
       }
     }
   }
@@ -247,6 +283,74 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                             ),
                             onChanged: (_) => unawaited(save(task)),
                           ),
+                          const SizedBox(height: 20),
+                          if (evidence.isNotEmpty) ...[
+                            const Text(
+                              'Photo evidence',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              height: 92,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: evidence.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 10),
+                                itemBuilder: (_, index) => Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Image.file(
+                                        File(evidence[index].localPath),
+                                        width: 116,
+                                        height: 92,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, _, _) => Container(
+                                          width: 116,
+                                          height: 92,
+                                          color: TankColors.mint,
+                                          alignment: Alignment.center,
+                                          child: const Icon(
+                                            Icons.photo_outlined,
+                                            color: TankColors.teal,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 4,
+                                      top: 4,
+                                      child: CircleAvatar(
+                                        radius: 12,
+                                        backgroundColor: Colors.black54,
+                                        child: Text(
+                                          '${index + 1}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                          if (!locked)
+                            OutlinedButton.icon(
+                              onPressed: saving || submitting
+                                  ? null
+                                  : () => captureEvidence(task),
+                              icon: const Icon(Icons.camera_alt_outlined),
+                              label: Text(
+                                evidence.isEmpty
+                                    ? 'Add photo evidence'
+                                    : 'Add another photo',
+                              ),
+                            ),
                           const SizedBox(height: 16),
                           Text(
                             template.source,

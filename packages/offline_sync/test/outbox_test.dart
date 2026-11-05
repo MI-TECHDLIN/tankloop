@@ -94,6 +94,37 @@ void main() {
       expect(reopened.entries.single.receipt, isNull);
     },
   );
+  test('photo evidence persists with the queued command', () async {
+    await outbox.save(
+      task: task,
+      answers: {
+        for (final q in template.questions)
+          q.id: const InspectionAnswer(AnswerChoice.unknown),
+      },
+      notes: 'Photo attached',
+      observedAt: dashboard.asOf,
+      evidence: [
+        InspectionEvidence(
+          id: 'evidence-1',
+          localPath: '/device/photos/evidence-1.jpg',
+          capturedAt: dashboard.asOf,
+        ),
+      ],
+    );
+    await outbox.enqueue(task.id, template);
+    final reopened = InspectionOutbox(
+      store: storage,
+      namespace: 'user-a',
+      scope: dashboard.scope,
+    );
+    await reopened.load();
+    expect(reopened.entries.single.command.evidence.single.id, 'evidence-1');
+    expect(
+      reopened.entries.single.command.evidence.single.localPath,
+      '/device/photos/evidence-1.jpg',
+    );
+    expect(reopened.entries.single.state, DraftState.pending);
+  });
   test('different accounts and facilities cannot see a cached queue', () async {
     await saveAndQueue();
     final otherUser = InspectionOutbox(

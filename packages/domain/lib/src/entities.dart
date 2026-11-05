@@ -426,6 +426,45 @@ class InspectionTask {
   };
 }
 
+class InspectionEvidence {
+  const InspectionEvidence({
+    required this.id,
+    required this.localPath,
+    required this.capturedAt,
+    this.uploadedPath,
+  });
+  final String id;
+  final String localPath;
+  final DateTime capturedAt;
+  final String? uploadedPath;
+
+  InspectionEvidence copyWith({String? uploadedPath}) => InspectionEvidence(
+    id: id,
+    localPath: localPath,
+    capturedAt: capturedAt,
+    uploadedPath: uploadedPath ?? this.uploadedPath,
+  );
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'local_path': localPath,
+    'captured_at': capturedAt.toUtc().toIso8601String(),
+    'uploaded_path': uploadedPath,
+  };
+
+  factory InspectionEvidence.fromJson(Map<String, dynamic> json) =>
+      InspectionEvidence(
+        id: json['id'] as String,
+        localPath: json['local_path'] as String,
+        capturedAt: DateTime.parse(json['captured_at'] as String),
+        uploadedPath: json['uploaded_path'] as String?,
+      );
+}
+
+abstract interface class EvidenceUploader {
+  Future<String> uploadEvidence(InspectionEvidence evidence);
+}
+
 class InspectionSubmission {
   InspectionSubmission({
     required this.clientEventId,
@@ -436,8 +475,10 @@ class InspectionSubmission {
     required this.observedAt,
     required Map<String, InspectionAnswer> answers,
     this.notes = '',
+    List<InspectionEvidence> evidence = const [],
     required this.isSimulated,
-  }) : answers = Map.unmodifiable(answers);
+  }) : answers = Map.unmodifiable(answers),
+       evidence = List.unmodifiable(evidence);
   final String clientEventId;
   final String taskId;
   final Scope scope;
@@ -446,6 +487,7 @@ class InspectionSubmission {
   final DateTime observedAt;
   final Map<String, InspectionAnswer> answers;
   final String notes;
+  final List<InspectionEvidence> evidence;
   final bool isSimulated;
   bool get hasRisk => answers.values.any((a) => a.choice == AnswerChoice.yes);
 
@@ -478,6 +520,7 @@ class InspectionSubmission {
     'observed_at': observedAt.toUtc().toIso8601String(),
     'answers': answers.map((id, answer) => MapEntry(id, answer.toJson())),
     'notes': notes,
+    'evidence': evidence.map((item) => item.toJson()).toList(),
     'is_simulated': isSimulated,
   };
   factory InspectionSubmission.fromJson(Map<String, dynamic> json) =>
@@ -498,6 +541,12 @@ class InspectionSubmission {
           ),
         ),
         notes: json['notes'] as String? ?? '',
+        evidence: (json['evidence'] as List? ?? const [])
+            .map(
+              (item) =>
+                  InspectionEvidence.fromJson(item as Map<String, dynamic>),
+            )
+            .toList(),
         isSimulated: json['is_simulated'] as bool,
       );
 }
