@@ -194,7 +194,33 @@ TankLoop is being prepared for the **Xylem Global Student Innovation Challenge 2
 
 ## Getting started
 
-Project setup and development instructions are being added in the repository setup documentation. Once available, start there for environment prerequisites, dependency installation, local services, and validation commands. This README intentionally does not invent commands that are not yet present.
+The first Field and Verify slice is runnable with Flutter **3.47.9** (Dart **3.13.7**). From the repository root:
+
+```sh
+flutter pub get
+```
+
+Run each app in its own terminal:
+
+```sh
+(cd apps/field_app && flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8080)
+```
+
+```sh
+(cd apps/portal_web && flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8081)
+```
+
+Open [Field](http://127.0.0.1:8080) and [Verify](http://127.0.0.1:8081). Both start with deterministic simulation seed `20261101`, day `10`. No account or backend is required for this mode. For Android, run `flutter run` from `apps/field_app` with an emulator or device connected.
+
+1. In Field, open **Start inspection**, answer the versioned checklist and save a draft.
+2. Reload. The draft, answers and visit notes are retained on the device.
+3. Use **Profile > Pause sync**, complete the check and **Queue inspection**. Reload again, then use **Activity > Sync queued inspections** to receive a durable acknowledgement. Pause sync is a session-local exercise control.
+4. Use **Cases** to inspect the generated response history and **Profile > Advance 1 day** to progress scheduled inspections, sample results and guarded case transitions.
+5. Open Verify for a dated public point record. **Water > Copy public QR link** selects a point; **Advance 1 day** and **Text-first view** are also available in Verify.
+
+Simulation instances reproduce the same baseline but do not share custom Field submissions. **Supabase mode shares Field submissions with the public page**. Follow [local backend setup](docs/development.md#local-supabase) for that path.
+
+See [development commands and hosted inputs](docs/development.md), [implementation details](docs/implementation.md), and [delivery scope and known limitations](docs/delivery.md) for the current slice.
 
 ## Submission materials
 

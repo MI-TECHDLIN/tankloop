@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="TankLoop water drop">
+  <rect width="128" height="128" rx="32" fill="#0F766E"/>
+  <path d="M64 24C58 35 39 54 39 72C39 87 50 98 64 98C78 98 89 87 89 72C89 54 70 35 64 24Z" fill="#EDF6F5"/>
+  <path d="M51 73C51 81 56 86 64 86" fill="none" stroke="#0F766E" stroke-width="6" stroke-linecap="round" opacity=".45"/>
+</svg>
