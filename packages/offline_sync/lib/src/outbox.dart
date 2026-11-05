@@ -5,6 +5,7 @@ import 'package:tankloop_data/data.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:uuid/uuid.dart';
 import 'storage.dart';
+import 'photos.dart';
 
 enum DraftState { draft, pending, synced, blocked }
 
@@ -64,9 +65,12 @@ class InspectionOutbox extends ChangeNotifier {
   List<OutboxEntry> _entries = [];
   Future<void> _tail = Future.value();
   bool syncing = false;
+  int _generation = 0;
   List<OutboxEntry> get entries => List.unmodifiable(_entries);
   int get pendingCount =>
       _entries.where((e) => e.state == DraftState.pending).length;
+  LocalPhotos get photos => LocalPhotos(store, namespace);
+  int get failedCount => _entries.where((e) => e.error != null).length;
   int get blockedCount =>
       _entries.where((e) => e.state == DraftState.blocked).length;
   String get storageKey =>
@@ -216,6 +220,7 @@ class InspectionOutbox extends ChangeNotifier {
     bool retryNow = false,
   }) async {
     if (!online || syncing) return;
+    final generation = _generation;
     syncing = true;
     notifyListeners();
     try {
@@ -245,13 +250,19 @@ class InspectionOutbox extends ChangeNotifier {
           if (repository case final EvidenceUploader uploader) {
             for (final item in command.evidence) {
               if (item.uploadedPath == null) {
-                final uploaded = await uploader.uploadEvidence(item);
+                final uploaded = await uploader
+                    .uploadEvidence(item, bytes: await photos.read(item))
+                    .timeout(const Duration(seconds: 30));
+                if (generation != _generation) return;
                 await markEvidenceUploaded(command.taskId, item.id, uploaded);
                 command = forTask(command.taskId)!.command;
               }
             }
           }
-          final receipt = await repository.submitInspection(command);
+          final receipt = await repository
+              .submitInspection(command)
+              .timeout(const Duration(seconds: 30));
+          if (generation != _generation) return;
           requireRule(
             receipt.clientEventId == entry.command.clientEventId &&
                 receipt.inspectionId == entry.command.taskId &&
@@ -270,8 +281,10 @@ class InspectionOutbox extends ChangeNotifier {
             ),
           );
         } catch (error) {
+          if (generation != _generation) return;
           final permanent =
               error is RuleViolation ||
+              error is FormatException ||
               error is RepositoryFailure && error.kind != FailureKind.transient;
           final delay = Duration(
             seconds: min(300, 1 << min(attempt, 8)) + _random.nextInt(5),
@@ -299,9 +312,17 @@ class InspectionOutbox extends ChangeNotifier {
     }
   }
 
-  Future<void> clear() => _serial(() async {
-    await store.remove(storageKey);
-    _entries = [];
-    notifyListeners();
-  });
+  Future<void> clear() {
+    _generation++;
+    return _serial(() async {
+      for (final entry in _entries) {
+        for (final photo in entry.command.evidence) {
+          await photos.remove(photo.id);
+        }
+      }
+      await store.remove(storageKey);
+      _entries = [];
+      notifyListeners();
+    });
+  }
 }

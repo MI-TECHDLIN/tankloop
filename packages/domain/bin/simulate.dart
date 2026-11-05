@@ -204,7 +204,8 @@ void _writeSql(SimulationEngine engine) {
     }
   }
   for (final work in engine.workOrders.values) {
-    _insert('public.work_orders', work.toJson());
+    // Photo links are command-scoped rows in field_evidence, not columns on work_orders.
+    _insert('public.work_orders', work.toJson()..remove('evidence'));
   }
   for (final qr in engine.qrs) {
     _insert('public.public_records', {'id': ids.uuid(), ...qr.toJson()});

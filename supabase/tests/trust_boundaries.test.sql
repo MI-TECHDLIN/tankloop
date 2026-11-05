@@ -110,7 +110,10 @@ set local role anon;
 select throws_ok($$select * from test_results$$,'42501',null,'Anonymous readers cannot enumerate results');
 select throws_ok($$select * from public_records$$,'42501',null,'Anonymous readers cannot enumerate point tokens');
 select throws_ok($$select * from inspections$$,'42501',null,'Anonymous readers cannot access inspection notes');
+select is((select count(*)::int from storage.buckets where id = 'inspection-evidence'),0,'Anonymous readers cannot enumerate the evidence bucket');
+reset role;
 select is((select public from storage.buckets where id = 'inspection-evidence'),false,'Inspection evidence bucket is private by default');
+set local role anon;
 select ok(
   (select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'field members upload own evidence') = 1,
   'Private evidence upload policy is present'

@@ -10,3 +10,5 @@ export 'src/manager_supabase.dart';
 export 'src/public_point_repository.dart';
 export 'src/public_point_supabase.dart';
 export 'src/repository.dart';
+
+export 'src/field_work.dart';

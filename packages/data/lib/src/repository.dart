@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
+import 'field_work.dart';
+import 'dart:typed_data';
 import 'package:supabase/supabase.dart';
 import 'package:tankloop_domain/domain.dart';
 
@@ -96,6 +99,7 @@ class DashboardSnapshot {
     required this.inspections,
     required this.cases,
     required this.publicTokens,
+    this.workOrders = const [],
   });
   final Facility facility;
   final String actorId;
@@ -106,6 +110,7 @@ class DashboardSnapshot {
   final List<InspectionTask> inspections;
   final List<CaseSummary> cases;
   final Map<String, String> publicTokens;
+  final List<FieldWorkOrder> workOrders;
   Scope get scope => facility.scope;
   ChecklistTemplate templateFor(InspectionTask task) =>
       templates.singleWhere((t) => t.id == task.templateId);
@@ -121,6 +126,7 @@ class DashboardSnapshot {
     'inspections': inspections.map((a) => a.toJson()).toList(),
     'cases': cases.map((a) => a.toJson()).toList(),
     'public_tokens': publicTokens,
+    'work_orders': workOrders.map((w) => w.toJson()).toList(),
   };
   factory DashboardSnapshot.fromJson(Map<String, dynamic> j) {
     final f = j['facility'] as Map<String, dynamic>;
@@ -132,6 +138,9 @@ class DashboardSnapshot {
         timezone: f['timezone'] as String,
         isSimulated: f['is_simulated'] as bool,
       ),
+      workOrders: (j['work_orders'] as List? ?? [])
+          .map((w) => FieldWorkOrder.fromJson(w as Map<String, dynamic>))
+          .toList(),
       actorId: j['actor_id'] as String,
       asOf: DateTime.parse(j['as_of'] as String),
       assets: (j['assets'] as List).map((v) {
@@ -229,10 +238,58 @@ abstract class ManagerRepository extends TankLoopRepository {
   });
 }
 
-class SimulationRepository extends ManagerRepository {
+class SimulationRepository extends ManagerRepository
+    implements FieldWorkRepository {
   SimulationRepository({int seed = 20261101, int day = 10})
     : engine = SimulationEngine(seed: seed)..advance(Duration(days: day));
   final SimulationEngine engine;
+  final _workReceipts = <String, WorkStepReceipt>{};
+  final _workRequests = <String, String>{};
+  @override
+  Future<WorkStepReceipt> submitWorkStep(WorkStepCommand command) async {
+    final prior = _workReceipts[command.clientEventId];
+    final content = jsonEncode(command.toJson());
+    if (prior != null) {
+      requireRule(
+        _workRequests[command.clientEventId] == content,
+        'event_conflict',
+        'Command content changed.',
+      );
+      return prior;
+    }
+    final order = engine.workOrders[command.orderId];
+    requireRule(
+      order != null &&
+          order.version == command.expectedVersion &&
+          order.scope.matches(command.scope),
+      'version_conflict',
+      'Refresh this work order before recording another step.',
+    );
+    final next = order!.transition(
+      command.target,
+      CommandContext(
+        actor: engine.actorFor(order.scope, Role.field),
+        at: engine.now,
+        eventId: command.clientEventId,
+        serverConfirmed: true,
+        reason: command.notes.isEmpty
+            ? 'Simulated field action'
+            : command.notes,
+      ),
+      evidence: command.notes.isEmpty ? null : command.notes,
+      evidenceFiles: command.evidence,
+    );
+    engine.workOrders[order.id] = next;
+    final receipt = WorkStepReceipt(
+      clientEventId: command.clientEventId,
+      orderId: order.id,
+      version: next.version,
+      receivedAt: engine.now,
+    );
+    _workRequests[command.clientEventId] = content;
+    _workReceipts[command.clientEventId] = receipt;
+    return receipt;
+  }
 
   @override
   Future<DashboardSnapshot> today() async {
@@ -274,6 +331,13 @@ class SimulationRepository extends ManagerRepository {
                   .map((e) => '${isoDate(e.at)} · ${e.to.replaceAll('_', ' ')}')
                   .toList(),
             ),
+          )
+          .toList(),
+      workOrders: engine.workOrders.values
+          .where((w) => w.scope.matches(facility.scope))
+          .map(
+            (w) =>
+                FieldWorkOrder.fromJson(Map<String, dynamic>.from(w.toJson())),
           )
           .toList(),
       publicTokens: {
@@ -376,12 +440,43 @@ class SimulationRepository extends ManagerRepository {
 }
 
 class SupabaseTankLoopRepository extends ManagerRepository
-    implements EvidenceUploader {
+    implements EvidenceUploader, FieldWorkRepository {
   const SupabaseTankLoopRepository(this.client);
   final SupabaseClient client;
+  @override
+  Future<WorkStepReceipt> submitWorkStep(WorkStepCommand command) async {
+    try {
+      final result = await client.rpc(
+        'submit_work_step',
+        params: {
+          'p_event_id': command.clientEventId,
+          'p_work_order_id': command.orderId,
+          'p_expected_version': command.expectedVersion,
+          'p_target': wireName(command.target),
+          'p_notes': command.notes,
+          'p_observed_at': command.observedAt.toUtc().toIso8601String(),
+          'p_evidence': command.evidence
+              .map(
+                (e) => {
+                  'id': e.id,
+                  'path': e.uploadedPath,
+                  'captured_at': e.capturedAt.toUtc().toIso8601String(),
+                },
+              )
+              .toList(),
+        },
+      );
+      return WorkStepReceipt.fromJson(result as Map<String, dynamic>);
+    } on PostgrestException catch (error) {
+      throw _mapFailure(error);
+    }
+  }
 
   @override
-  Future<String> uploadEvidence(InspectionEvidence evidence) async {
+  Future<String> uploadEvidence(
+    InspectionEvidence evidence, {
+    Uint8List? bytes,
+  }) async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) {
       throw const RepositoryFailure(
@@ -393,16 +488,17 @@ class SupabaseTankLoopRepository extends ManagerRepository
     try {
       await client.storage
           .from('inspection-evidence')
-          .upload(
+          .uploadBinary(
             path,
-            File(evidence.localPath),
+            bytes ?? await File(evidence.localPath).readAsBytes(),
             fileOptions: const FileOptions(
               contentType: 'image/jpeg',
-              upsert: true,
+              upsert: false,
             ),
           );
       return path;
-    } on StorageException catch (_) {
+    } on StorageException catch (error) {
+      if (error.statusCode == '409' || error.error == 'Duplicate') return path;
       throw const RepositoryFailure(
         FailureKind.transient,
         'Photo evidence could not be uploaded. It remains saved on this device.',
@@ -460,6 +556,11 @@ class SupabaseTankLoopRepository extends ManagerRepository
             .select('point_id,token')
             .eq('facility_id', id)
             .isFilter('revoked_at', null),
+        client
+            .from('work_orders')
+            .select()
+            .eq('facility_id', id)
+            .eq('assignee_id', client.auth.currentUser!.id),
       ]);
       return DashboardSnapshot.fromJson({
         'facility': facility,
@@ -482,6 +583,7 @@ class SupabaseTankLoopRepository extends ManagerRepository
               },
             )
             .toList(),
+        'work_orders': rows[6],
         'public_tokens': {
           for (final row in rows[5])
             row['point_id'] as String: row['token'] as String,
@@ -496,7 +598,7 @@ class SupabaseTankLoopRepository extends ManagerRepository
   Future<SyncReceipt> submitInspection(InspectionSubmission command) async {
     try {
       final value = await client.rpc(
-        'submit_inspection',
+        'submit_inspection_with_evidence',
         params: {
           'p_event_id': command.clientEventId,
           'p_inspection_id': command.taskId,
@@ -505,6 +607,16 @@ class SupabaseTankLoopRepository extends ManagerRepository
             (id, answer) => MapEntry(id, answer.toJson()),
           ),
           'p_notes': command.notes,
+          'p_evidence': command.evidence
+              .map(
+                (e) => {
+                  'id': e.id,
+                  'path': e.uploadedPath,
+                  'captured_at': e.capturedAt.toUtc().toIso8601String(),
+                  'question_id': e.questionId,
+                },
+              )
+              .toList(),
           'p_observed_at': command.observedAt.toUtc().toIso8601String(),
         },
       );

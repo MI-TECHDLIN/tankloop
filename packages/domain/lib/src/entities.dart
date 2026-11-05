@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 enum Role { field, manager, lab, admin }
 
 enum EvidenceSource { residentReport, inspection, fieldScreen, laboratory }
@@ -432,17 +434,20 @@ class InspectionEvidence {
     required this.localPath,
     required this.capturedAt,
     this.uploadedPath,
+    this.questionId,
   });
   final String id;
   final String localPath;
   final DateTime capturedAt;
   final String? uploadedPath;
+  final String? questionId;
 
   InspectionEvidence copyWith({String? uploadedPath}) => InspectionEvidence(
     id: id,
     localPath: localPath,
     capturedAt: capturedAt,
     uploadedPath: uploadedPath ?? this.uploadedPath,
+    questionId: questionId,
   );
 
   Map<String, Object?> toJson() => {
@@ -450,6 +455,7 @@ class InspectionEvidence {
     'local_path': localPath,
     'captured_at': capturedAt.toUtc().toIso8601String(),
     'uploaded_path': uploadedPath,
+    'question_id': questionId,
   };
 
   factory InspectionEvidence.fromJson(Map<String, dynamic> json) =>
@@ -458,11 +464,15 @@ class InspectionEvidence {
         localPath: json['local_path'] as String,
         capturedAt: DateTime.parse(json['captured_at'] as String),
         uploadedPath: json['uploaded_path'] as String?,
+        questionId: json['question_id'] as String?,
       );
 }
 
 abstract interface class EvidenceUploader {
-  Future<String> uploadEvidence(InspectionEvidence evidence);
+  Future<String> uploadEvidence(
+    InspectionEvidence evidence, {
+    Uint8List? bytes,
+  });
 }
 
 class InspectionSubmission {

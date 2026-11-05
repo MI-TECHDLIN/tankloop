@@ -11,6 +11,9 @@ import 'inspection.dart';
 import 'qr_scan.dart';
 import 'runtime.dart';
 import 'loading.dart';
+import 'sign_in.dart';
+import 'water_point.dart';
+import 'work_order.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -98,7 +101,7 @@ class _FieldBootstrapState extends State<FieldBootstrap> {
         title: 'TankLoop Field',
         debugShowCheckedModeBanner: false,
         theme: tankLoopTheme(),
-        home: const _SignIn(),
+        home: const SignInScreen(),
       );
     }
     return FutureBuilder(
@@ -148,7 +151,26 @@ class FieldApp extends StatefulWidget {
   State<FieldApp> createState() => _FieldAppState();
 }
 
-class _FieldAppState extends State<FieldApp> {
+class _FieldAppState extends State<FieldApp> with WidgetsBindingObserver {
+  Timer? syncTimer;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(widget.runtime.resume());
+    if (widget.runtime.config.mode == AppMode.supabase) {
+      syncTimer = Timer.periodic(
+        const Duration(seconds: 30),
+        (_) => unawaited(widget.runtime.sync()),
+      );
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(widget.runtime.resume());
+  }
+
   late final GoRouter router = GoRouter(
     routes: [
       GoRoute(path: '/', builder: (_, _) => const FieldHome()),
@@ -156,6 +178,16 @@ class _FieldAppState extends State<FieldApp> {
         path: '/inspection/:id',
         builder: (_, state) =>
             InspectionPage(taskId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/point/:id',
+        builder: (_, state) =>
+            WaterPointScreen(pointId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/work/:id',
+        builder: (_, state) =>
+            WorkOrderScreen(orderId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/scan', builder: (_, _) => const QrScanPage()),
     ],
@@ -176,6 +208,8 @@ class _FieldAppState extends State<FieldApp> {
   );
   @override
   void dispose() {
+    syncTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     router.dispose();
     super.dispose();
   }
@@ -188,115 +222,6 @@ class _FieldAppState extends State<FieldApp> {
       debugShowCheckedModeBanner: false,
       theme: tankLoopTheme(),
       routerConfig: router,
-    ),
-  );
-}
-
-class _SignIn extends StatefulWidget {
-  const _SignIn();
-  @override
-  State<_SignIn> createState() => _SignInState();
-}
-
-class _SignInState extends State<_SignIn> {
-  final email = TextEditingController();
-  final password = TextEditingController();
-  bool busy = false;
-  String? error;
-  @override
-  void dispose() {
-    email.dispose();
-    password.dispose();
-    super.dispose();
-  }
-
-  Future<void> submit() async {
-    setState(() {
-      busy = true;
-      error = null;
-    });
-    try {
-      await Supabase.instance.client.auth.signInWithPassword(
-        email: email.text.trim(),
-        password: password.text,
-      );
-    } on AuthException {
-      if (mounted) {
-        setState(
-          () => error =
-              'Sign-in could not be completed. Check your credentials and active invitation.',
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(
-          () => error =
-              'Could not reach the sign-in service. Check your connection and retry.',
-        );
-      }
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => TankBackdrop(
-    child: Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: GlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const TankBrand(),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Keep the loop\nmoving.',
-                    style: Theme.of(context).textTheme.headlineLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('Sign in with your assigned facility account.'),
-                  const SizedBox(height: 24),
-                  TextField(
-                    controller: email,
-                    keyboardType: TextInputType.emailAddress,
-                    autofillHints: const [AutofillHints.email],
-                    decoration: const InputDecoration(
-                      labelText: 'Email address',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: password,
-                    obscureText: true,
-                    autofillHints: const [AutofillHints.password],
-                    decoration: const InputDecoration(labelText: 'Password'),
-                    onSubmitted: (_) {
-                      if (!busy) unawaited(submit());
-                    },
-                  ),
-                  if (error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Text(
-                        error!,
-                        style: const TextStyle(color: TankColors.amber),
-                      ),
-                    ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: busy ? null : submit,
-                    child: Text(busy ? 'Signing in…' : 'Sign in'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     ),
   );
 }

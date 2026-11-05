@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tankloop_data/data.dart';
@@ -46,7 +48,10 @@ class FlakyEvidenceRepository extends FlakyRepository
   int uploads = 0;
 
   @override
-  Future<String> uploadEvidence(InspectionEvidence evidence) async {
+  Future<String> uploadEvidence(
+    InspectionEvidence evidence, {
+    Uint8List? bytes,
+  }) async {
     uploads++;
     if (uploads == failAtUpload) {
       throw const RepositoryFailure(
@@ -55,6 +60,19 @@ class FlakyEvidenceRepository extends FlakyRepository
       );
     }
     return 'private/${evidence.id}.jpg';
+  }
+}
+
+class DelayedReceiptRepository extends FlakyRepository {
+  DelayedReceiptRepository(super.inner);
+  final started = Completer<void>();
+  final release = Completer<void>();
+  @override
+  Future<SyncReceipt> submitInspection(InspectionSubmission command) async {
+    final receipt = await inner.submitInspection(command);
+    started.complete();
+    await release.future;
+    return receipt;
   }
 }
 
@@ -301,6 +319,21 @@ void main() {
       );
     },
   );
+  test(
+    'clearing local data during upload cannot resurrect the cleared queue',
+    () async {
+      await saveAndQueue();
+      final network = DelayedReceiptRepository(repository);
+      final sync = outbox.sync(network, online: true);
+      await network.started.future;
+      await outbox.clear();
+      network.release.complete();
+      await sync;
+      expect(outbox.entries, isEmpty);
+      expect(await storage.read(outbox.storageKey), isNull);
+    },
+  );
+
   test('incomplete answers cannot be queued', () async {
     await outbox.save(
       task: task,

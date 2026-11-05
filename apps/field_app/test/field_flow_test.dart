@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tankloop_data/data.dart';
@@ -33,6 +36,167 @@ class UnavailableRepository implements TankLoopRepository {
 
 void main() {
   const simulation = AppConfig(mode: AppMode.simulation);
+
+  testWidgets('captured evidence survives camera cache loss and app restart', (
+    tester,
+  ) async {
+    final directory = Directory.systemTemp.createTempSync('tankloop-camera-');
+    final photo = File('${directory.path}/capture.png');
+    photo.writeAsBytesSync(
+      base64Decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgaGj4DwADhAIAV8n6LgAAAABJRU5ErkJggg==',
+      ),
+    );
+    const channel = MethodChannel('plugins.flutter.io/image_picker');
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      channel,
+      (call) async => photo.path,
+    );
+    addTearDown(() async {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        null,
+      );
+      await directory.delete(recursive: true);
+    });
+    final store = MemoryKeyValueStore();
+    var runtime = await FieldRuntime.create(simulation, store);
+    await tester.pumpWidget(FieldApp(runtime: runtime));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Start inspection'));
+    await tester.ensureVisible(find.text('Add photo evidence'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add photo evidence'));
+    await tester.pump();
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+    });
+    await tester.pumpAndSettle();
+    for (
+      var tick = 0;
+      tick < 8 && runtime.outbox.entries.single.command.evidence.isEmpty;
+      tick++
+    ) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 30)),
+      );
+      await tester.pump();
+    }
+    expect(runtime.outbox.entries.single.command.evidence, hasLength(1));
+    await tester.pumpWidget(const SizedBox.shrink());
+    runtime.outbox.dispose();
+    runtime.dispose();
+    photo.deleteSync();
+    PaintingBinding.instance.imageCache.clear();
+    runtime = await FieldRuntime.create(simulation, store);
+    addTearDown(runtime.dispose);
+    addTearDown(runtime.outbox.dispose);
+    await tester.pumpWidget(FieldApp(runtime: runtime));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Start inspection'));
+    await tester.ensureVisible(find.text('Photo evidence'));
+    await tester.runAsync(
+      () async => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(Image), findsWidgets);
+    expect(
+      find.byIcon(Icons.broken_image_outlined),
+      findsNothing,
+      reason: 'Saved photo must remain viewable after OS clears camera cache',
+    );
+  });
+
+  testWidgets('manual public QR link opens assigned tasks and point history', (
+    tester,
+  ) async {
+    final runtime = await FieldRuntime.create(
+      simulation,
+      MemoryKeyValueStore(),
+    );
+    addTearDown(runtime.dispose);
+    addTearDown(runtime.outbox.dispose);
+    final task = runtime.dashboard.inspections.firstWhere(
+      (t) => !t.isSubmitted,
+    );
+    final point = runtime.dashboard.points.firstWhere(
+      (p) => p.assetId == task.assetId,
+    );
+    final token = runtime.dashboard.publicTokens[point.id]!;
+    await tester.pumpWidget(FieldApp(runtime: runtime));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byTooltip('Scan water point QR'));
+    final code = find.byWidgetPredicate(
+      (w) => w is TextField && w.decoration?.labelText == 'Manual point code',
+    );
+    await tester.enterText(code, runtime.publicUrl(token));
+    await tapVisible(tester, find.text('Use manual code'));
+    expect(find.text('Assigned checks'), findsOneWidget);
+    expect(find.text('Inspection history'), findsOneWidget);
+    expect(find.text(point.label), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  test(
+    'Android lost camera result attaches to the original saved draft',
+    () async {
+      final directory = Directory.systemTemp.createTempSync(
+        'tankloop-lost-camera-',
+      );
+      final image = File('${directory.path}/recovered.jpg')
+        ..writeAsBytesSync([1, 2, 3]);
+      addTearDown(() => directory.delete(recursive: true));
+      final store = MemoryKeyValueStore();
+      final runtime = await FieldRuntime.create(simulation, store);
+      addTearDown(runtime.dispose);
+      addTearDown(runtime.outbox.dispose);
+      final task = runtime.dashboard.inspections.firstWhere(
+        (t) => !t.isSubmitted,
+      );
+      final question = runtime.dashboard.templateFor(task).questions.first.id;
+      await runtime.outbox.save(
+        task: task,
+        answers: {},
+        notes: 'Before camera',
+        observedAt: runtime.dashboard.asOf,
+      );
+      await store.write(
+        runtime.photoCapture.key,
+        jsonEncode({
+          'id': task.id,
+          'work_order': false,
+          'question_id': question,
+        }),
+      );
+      const channel = MethodChannel('plugins.flutter.io/image_picker');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+        call,
+      ) async {
+        expect(call.method, 'retrieve');
+        return {
+          'type': 'image',
+          'path': image.path,
+          'pathList': [image.path],
+        };
+      });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      await runtime.photoCapture.recover();
+      final entry = runtime.outbox.forTask(task.id)!;
+      expect(entry.command.notes, 'Before camera');
+      expect(entry.command.evidence.single.questionId, question);
+      expect(await store.read(runtime.photoCapture.key), isNull);
+      expect(await runtime.outbox.photos.read(entry.command.evidence.single), [
+        1,
+        2,
+        3,
+      ]);
+    },
+  );
 
   testWidgets(
     'a field visit survives recreation, queues offline and gets one receipt',
