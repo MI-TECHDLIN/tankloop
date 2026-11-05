@@ -169,21 +169,18 @@ void main() {
         }),
       );
       const channel = MethodChannel('plugins.flutter.io/image_picker');
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
-        call,
-      ) async {
-        expect(call.method, 'retrieve');
-        return {
-          'type': 'image',
-          'path': image.path,
-          'pathList': [image.path],
-        };
-      });
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            expect(call.method, 'retrieve');
+            return {
+              'type': 'image',
+              'path': image.path,
+              'pathList': [image.path],
+            };
+          });
       addTearDown(
-        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-          channel,
-          null,
-        ),
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
       );
       await runtime.photoCapture.recover();
       final entry = runtime.outbox.forTask(task.id)!;
