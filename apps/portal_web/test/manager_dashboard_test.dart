@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tankloop_data/data.dart';
+import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_portal/manager_dashboard.dart';
 
 void main() {
@@ -19,5 +20,20 @@ void main() {
     expect(find.text('Operational overview'), findsOneWidget);
     expect(find.text('Evidence completeness'), findsOneWidget);
     expect(find.text('SIMULATED DATA · No real water tests'), findsOneWidget);
+  });
+
+  testWidgets('manager loading uses frosted skeletons with reduced motion', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(disableAnimations: true),
+        child: MaterialApp(home: ManagerLoadingSkeleton(selected: 3)),
+      ),
+    );
+
+    expect(find.byType(FrostedSkeleton), findsWidgets);
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.byType(FrostedSkeletonCard), findsWidgets);
   });
 }

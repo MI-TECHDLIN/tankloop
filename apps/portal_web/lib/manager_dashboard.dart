@@ -67,8 +67,9 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
         future: snapshot,
         builder: (context, state) {
           if (state.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return ManagerLoadingSkeleton(selected: selected);
           }
+
           if (state.hasError) {
             return Center(
               child: NoticeCard(
@@ -93,6 +94,81 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
           );
         },
       ),
+    ),
+  );
+}
+
+class ManagerLoadingSkeleton extends StatelessWidget {
+  const ManagerLoadingSkeleton({super.key, required this.selected});
+  final int selected;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: Row(
+      children: [
+        NavigationRail(
+          selectedIndex: null,
+          labelType: NavigationRailLabelType.selected,
+          leading: const Padding(
+            padding: EdgeInsets.all(16),
+            child: TankBrand(surface: 'MANAGER'),
+          ),
+          destinations: const [
+            NavigationRailDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              label: Text('Overview'),
+            ),
+          ],
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 28, 32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1180),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const FrostedSkeleton(height: 32, width: 280),
+                  const SizedBox(height: 16),
+                  const FrostedSkeleton(height: 42, width: double.infinity),
+                  const SizedBox(height: 20),
+                  if (selected == 0) ...[
+                    Row(
+                      children: List.generate(
+                        3,
+                        (index) => const Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(right: 12),
+                            child: FrostedSkeletonCard(lines: 1),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const FrostedSkeletonCard(lines: 2, showIcon: false),
+                    const SizedBox(height: 12),
+                    ...List.generate(
+                      2,
+                      (index) => const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: FrostedSkeletonCard(lines: 2),
+                      ),
+                    ),
+                  ] else ...[
+                    ...List.generate(
+                      4,
+                      (index) => const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: FrostedSkeletonCard(lines: 2),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     ),
   );
 }
