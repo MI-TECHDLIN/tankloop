@@ -540,37 +540,41 @@ class TankBrand extends StatelessWidget {
       ),
       const SizedBox(width: 12),
       Flexible(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'tankloop',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -.7,
-                  color: TankColors.navy,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 0),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'tankloop',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -.7,
+                    color: TankColors.navy,
+                  ),
                 ),
-              ),
-              Text(
-                surface,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2,
-                  color: TankColors.muted,
+                Text(
+                  surface,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2,
+                    color: TankColors.muted,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
       if (showSimulationBadge) ...[
-        const SizedBox(width: 10),
-        const SimulationBadge(),
+        const SizedBox(width: 8),
+        const SimulationBadge(compact: true),
       ],
     ],
   );
