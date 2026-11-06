@@ -807,7 +807,7 @@ class SectionHeading extends StatelessWidget {
             style: style ?? Theme.of(context).textTheme.headlineSmall,
           ),
         ),
-        if (trailing != null) trailing!,
+        if (trailing != null) ...[trailing!],
       ],
     ),
   );
