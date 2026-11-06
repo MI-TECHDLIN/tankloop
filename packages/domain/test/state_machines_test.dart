@@ -331,6 +331,22 @@ void main() {
       expect(work.state, WorkOrderState.accepted);
       expect(incident.isOpen, isTrue);
     });
+    test('completion can carry local photo evidence for a work step', () {
+      final photo = InspectionEvidence(
+        id: 'work-photo',
+        localPath: '/device/photos/work-photo.jpg',
+        capturedAt: day,
+      );
+      final work = assigned()
+          .transition(WorkOrderState.inProgress, context(role: Role.field))
+          .transition(
+            WorkOrderState.completed,
+            context(role: Role.field),
+            evidenceFiles: [photo],
+          );
+      expect(work.evidence.single.id, 'work-photo');
+      expect(work.history.last.evidenceIds, contains('work-photo'));
+    });
     test('rework clears obsolete completion evidence', () {
       var work = assigned()
           .transition(WorkOrderState.inProgress, context(role: Role.field))

@@ -5,6 +5,7 @@ import 'package:tankloop_data/data.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:uuid/uuid.dart';
 import 'storage.dart';
+import 'photos.dart';
 
 enum DraftState { draft, pending, synced, blocked }
 
@@ -64,9 +65,12 @@ class InspectionOutbox extends ChangeNotifier {
   List<OutboxEntry> _entries = [];
   Future<void> _tail = Future.value();
   bool syncing = false;
+  int _generation = 0;
   List<OutboxEntry> get entries => List.unmodifiable(_entries);
   int get pendingCount =>
       _entries.where((e) => e.state == DraftState.pending).length;
+  LocalPhotos get photos => LocalPhotos(store, namespace);
+  int get failedCount => _entries.where((e) => e.error != null).length;
   int get blockedCount =>
       _entries.where((e) => e.state == DraftState.blocked).length;
   String get storageKey =>
@@ -128,6 +132,7 @@ class InspectionOutbox extends ChangeNotifier {
     required Map<String, InspectionAnswer> answers,
     required String notes,
     required DateTime observedAt,
+    List<InspectionEvidence> evidence = const [],
   }) => _serial(() async {
     requireRule(
       task.scope.matches(scope),
@@ -149,6 +154,7 @@ class InspectionOutbox extends ChangeNotifier {
       observedAt: observedAt,
       answers: answers,
       notes: notes,
+      evidence: evidence,
       isSimulated: task.isSimulated,
     );
     await _replace(OutboxEntry(command: command));
@@ -170,12 +176,51 @@ class InspectionOutbox extends ChangeNotifier {
         );
       });
 
+  Future<void> markEvidenceUploaded(
+    String taskId,
+    String evidenceId,
+    String uploadedPath,
+  ) => _serial(() async {
+    final entry = forTask(taskId);
+    if (entry == null) return;
+    final evidence = entry.command.evidence
+        .map(
+          (item) => item.id == evidenceId
+              ? item.copyWith(uploadedPath: uploadedPath)
+              : item,
+        )
+        .toList();
+    final command = InspectionSubmission(
+      clientEventId: entry.command.clientEventId,
+      taskId: entry.command.taskId,
+      scope: entry.command.scope,
+      templateId: entry.command.templateId,
+      expectedVersion: entry.command.expectedVersion,
+      observedAt: entry.command.observedAt,
+      answers: entry.command.answers,
+      notes: entry.command.notes,
+      evidence: evidence,
+      isSimulated: entry.command.isSimulated,
+    );
+    await _replace(
+      OutboxEntry(
+        command: command,
+        state: entry.state,
+        attempts: entry.attempts,
+        nextAttemptAt: entry.nextAttemptAt,
+        error: entry.error,
+        receipt: entry.receipt,
+      ),
+    );
+  });
+
   Future<void> sync(
     TankLoopRepository repository, {
     required bool online,
     bool retryNow = false,
   }) async {
     if (!online || syncing) return;
+    final generation = _generation;
     syncing = true;
     notifyListeners();
     try {
@@ -191,17 +236,33 @@ class InspectionOutbox extends ChangeNotifier {
           .toList();
       for (final entry in ready) {
         final attempt = entry.attempts + 1;
+        var command = entry.command;
         await _serial(
           () => _replace(
             OutboxEntry(
-              command: entry.command,
+              command: command,
               state: DraftState.pending,
               attempts: attempt,
             ),
           ),
         );
         try {
-          final receipt = await repository.submitInspection(entry.command);
+          if (repository case final EvidenceUploader uploader) {
+            for (final item in command.evidence) {
+              if (item.uploadedPath == null) {
+                final uploaded = await uploader
+                    .uploadEvidence(item, bytes: await photos.read(item))
+                    .timeout(const Duration(seconds: 30));
+                if (generation != _generation) return;
+                await markEvidenceUploaded(command.taskId, item.id, uploaded);
+                command = forTask(command.taskId)!.command;
+              }
+            }
+          }
+          final receipt = await repository
+              .submitInspection(command)
+              .timeout(const Duration(seconds: 30));
+          if (generation != _generation) return;
           requireRule(
             receipt.clientEventId == entry.command.clientEventId &&
                 receipt.inspectionId == entry.command.taskId &&
@@ -212,7 +273,7 @@ class InspectionOutbox extends ChangeNotifier {
           await _serial(
             () => _replace(
               OutboxEntry(
-                command: entry.command,
+                command: command,
                 state: DraftState.synced,
                 attempts: attempt,
                 receipt: receipt,
@@ -220,8 +281,10 @@ class InspectionOutbox extends ChangeNotifier {
             ),
           );
         } catch (error) {
+          if (generation != _generation) return;
           final permanent =
               error is RuleViolation ||
+              error is FormatException ||
               error is RepositoryFailure && error.kind != FailureKind.transient;
           final delay = Duration(
             seconds: min(300, 1 << min(attempt, 8)) + _random.nextInt(5),
@@ -229,7 +292,7 @@ class InspectionOutbox extends ChangeNotifier {
           await _serial(
             () => _replace(
               OutboxEntry(
-                command: entry.command,
+                command: command,
                 state: permanent ? DraftState.blocked : DraftState.pending,
                 attempts: attempt,
                 nextAttemptAt: permanent ? null : _clock().add(delay),
@@ -249,9 +312,17 @@ class InspectionOutbox extends ChangeNotifier {
     }
   }
 
-  Future<void> clear() => _serial(() async {
-    await store.remove(storageKey);
-    _entries = [];
-    notifyListeners();
-  });
+  Future<void> clear() {
+    _generation++;
+    return _serial(() async {
+      for (final entry in _entries) {
+        for (final photo in entry.command.evidence) {
+          await photos.remove(photo.id);
+        }
+      }
+      await store.remove(storageKey);
+      _entries = [];
+      notifyListeners();
+    });
+  }
 }

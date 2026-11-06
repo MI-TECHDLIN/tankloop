@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tankloop_data/data.dart';
@@ -37,6 +39,41 @@ class FlakyRepository implements TankLoopRepository {
   @override
   Future<PublicWaterRecord?> publicRecord(String token) =>
       inner.publicRecord(token);
+}
+
+class FlakyEvidenceRepository extends FlakyRepository
+    implements EvidenceUploader {
+  FlakyEvidenceRepository(super.inner, {this.failAtUpload});
+  final int? failAtUpload;
+  int uploads = 0;
+
+  @override
+  Future<String> uploadEvidence(
+    InspectionEvidence evidence, {
+    Uint8List? bytes,
+  }) async {
+    uploads++;
+    if (uploads == failAtUpload) {
+      throw const RepositoryFailure(
+        FailureKind.transient,
+        'Battery removed during photo upload',
+      );
+    }
+    return 'private/${evidence.id}.jpg';
+  }
+}
+
+class DelayedReceiptRepository extends FlakyRepository {
+  DelayedReceiptRepository(super.inner);
+  final started = Completer<void>();
+  final release = Completer<void>();
+  @override
+  Future<SyncReceipt> submitInspection(InspectionSubmission command) async {
+    final receipt = await inner.submitInspection(command);
+    started.complete();
+    await release.future;
+    return receipt;
+  }
 }
 
 void main() {
@@ -92,6 +129,97 @@ void main() {
       );
       expect(reopened.entries.single.state, DraftState.pending);
       expect(reopened.entries.single.receipt, isNull);
+    },
+  );
+  test('photo evidence persists with the queued command', () async {
+    await outbox.save(
+      task: task,
+      answers: {
+        for (final q in template.questions)
+          q.id: const InspectionAnswer(AnswerChoice.unknown),
+      },
+      notes: 'Photo attached',
+      observedAt: dashboard.asOf,
+      evidence: [
+        InspectionEvidence(
+          id: 'evidence-1',
+          localPath: '/device/photos/evidence-1.jpg',
+          capturedAt: dashboard.asOf,
+        ),
+      ],
+    );
+    await outbox.enqueue(task.id, template);
+    final reopened = InspectionOutbox(
+      store: storage,
+      namespace: 'user-a',
+      scope: dashboard.scope,
+    );
+    await reopened.load();
+    expect(reopened.entries.single.command.evidence.single.id, 'evidence-1');
+    expect(
+      reopened.entries.single.command.evidence.single.localPath,
+      '/device/photos/evidence-1.jpg',
+    );
+    expect(reopened.entries.single.state, DraftState.pending);
+  });
+  test(
+    'partial photo upload resumes without re-uploading completed photos',
+    () async {
+      await outbox.save(
+        task: task,
+        answers: {
+          for (final q in template.questions)
+            q.id: const InspectionAnswer(AnswerChoice.unknown),
+        },
+        notes: 'Two photos',
+        observedAt: dashboard.asOf,
+        evidence: [
+          InspectionEvidence(
+            id: 'evidence-1',
+            localPath: '/device/photos/evidence-1.jpg',
+            capturedAt: dashboard.asOf,
+          ),
+          InspectionEvidence(
+            id: 'evidence-2',
+            localPath: '/device/photos/evidence-2.jpg',
+            capturedAt: dashboard.asOf,
+          ),
+        ],
+      );
+      await outbox.enqueue(task.id, template);
+      final network = FlakyEvidenceRepository(repository, failAtUpload: 2);
+      await outbox.sync(network, online: true);
+      expect(outbox.entries.single.state, DraftState.pending);
+      expect(
+        outbox.entries.single.command.evidence.first.uploadedPath,
+        isNotNull,
+      );
+      expect(outbox.entries.single.command.evidence[1].uploadedPath, isNull);
+      await outbox.sync(network, online: true, retryNow: true);
+      expect(outbox.entries.single.state, DraftState.synced);
+      expect(network.uploads, 3);
+    },
+  );
+  test(
+    'clock-skewed device timestamps remain immutable through retry',
+    () async {
+      final deviceTime = dashboard.asOf.add(const Duration(days: 3));
+      await outbox.save(
+        task: task,
+        answers: {
+          for (final q in template.questions)
+            q.id: const InspectionAnswer(AnswerChoice.unknown),
+        },
+        notes: 'Device clock was ahead',
+        observedAt: deviceTime,
+      );
+      await outbox.enqueue(task.id, template);
+      final network = FlakyRepository(repository, failAfterCommit: true);
+      await outbox.sync(network, online: true);
+      expect(outbox.entries.single.command.observedAt, deviceTime);
+      await outbox.sync(network, online: true, retryNow: true);
+      expect(outbox.entries.single.command.observedAt, deviceTime);
+      expect(outbox.entries.single.receipt, isNotNull);
     },
   );
   test('different accounts and facilities cannot see a cached queue', () async {
@@ -191,6 +319,21 @@ void main() {
       );
     },
   );
+  test(
+    'clearing local data during upload cannot resurrect the cleared queue',
+    () async {
+      await saveAndQueue();
+      final network = DelayedReceiptRepository(repository);
+      final sync = outbox.sync(network, online: true);
+      await network.started.future;
+      await outbox.clear();
+      network.release.complete();
+      await sync;
+      expect(outbox.entries, isEmpty);
+      expect(await storage.read(outbox.storageKey), isNull);
+    },
+  );
+
   test('incomplete answers cannot be queued', () async {
     await outbox.save(
       task: task,
