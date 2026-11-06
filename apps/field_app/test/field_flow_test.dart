@@ -221,8 +221,7 @@ void main() {
       expect(
         find.byWidgetPredicate(
           (w) =>
-              w is Text &&
-              w.data?.contains('SIMULATED DEMONSTRATION') == true,
+              w is Text && w.data?.contains('SIMULATED DEMONSTRATION') == true,
         ),
         findsOneWidget,
       );

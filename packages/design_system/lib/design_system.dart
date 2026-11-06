@@ -448,7 +448,8 @@ class _FrostedSkeletonState extends State<FrostedSkeleton>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     if (reduceMotion || debugDisableSkeletonAnimations) {
       controller.stop();
     } else {
@@ -464,7 +465,8 @@ class _FrostedSkeletonState extends State<FrostedSkeleton>
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final base = Container(
       height: widget.height,
       width: widget.width,
@@ -537,7 +539,10 @@ class TankBrand extends StatelessWidget {
       const compactBadgeWidth = 120.0;
 
       final hasBadge = showSimulationBadge;
-      final inlineReserved = iconWidth + iconGap + (hasBadge ? inlineBadgeGap + compactBadgeWidth : 0);
+      final inlineReserved =
+          iconWidth +
+          iconGap +
+          (hasBadge ? inlineBadgeGap + compactBadgeWidth : 0);
       final inlineAvailable = constraints.maxWidth - inlineReserved;
       final canFitInline = inlineAvailable >= 80;
 
@@ -635,11 +640,7 @@ Widget _icon() => Container(
     color: TankColors.teal,
     borderRadius: BorderRadius.circular(14),
   ),
-  child: const Icon(
-    Icons.water_drop_rounded,
-    color: Colors.white,
-    size: 24,
-  ),
+  child: const Icon(Icons.water_drop_rounded, color: Colors.white, size: 24),
 );
 
 /// Prominent simulation badge - designed to be visible beside the brand
