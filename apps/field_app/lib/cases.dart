@@ -77,7 +77,10 @@ class CasesScreen extends ConsumerWidget {
               if (item.dueAt != null)
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Response due ${recordTime(item.dueAt!)}', style: const TextStyle(color: TankColors.muted)),
+                  child: Text(
+                    'Response due ${recordTime(item.dueAt!)}',
+                    style: const TextStyle(color: TankColors.muted),
+                  ),
                 ),
               for (final event in item.events)
                 Padding(

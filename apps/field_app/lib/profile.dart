@@ -57,10 +57,15 @@ class ProfileScreen extends ConsumerWidget {
         children: [
           Text(
             runtime.dashboard.facility.label,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(color: Colors.white),
           ),
           const SizedBox(height: 8),
-          const Text('Field inspector · English', style: TextStyle(color: Colors.white70)),
+          const Text(
+            'Field inspector · English',
+            style: TextStyle(color: Colors.white70),
+          ),
           const SizedBox(height: 16),
           Text(
             runtime.config.mode == AppMode.simulation

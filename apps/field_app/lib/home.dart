@@ -40,7 +40,8 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
   Widget build(BuildContext context) {
     final runtime = ref.watch(runtimeProvider);
     final mediaQuery = MediaQuery.of(context);
-    final bottomInset = mediaQuery.viewPadding.bottom + mediaQuery.viewInsets.bottom;
+    final bottomInset =
+        mediaQuery.viewPadding.bottom + mediaQuery.viewInsets.bottom;
     final effectiveNavHeight = _navHeight + bottomInset + TankSpace.screen;
 
     return AnimatedBuilder(
@@ -74,7 +75,8 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
                             Expanded(
                               child: TankBrand(
                                 surface: 'FIELD',
-                                showSimulationBadge: dashboard.facility.isSimulated,
+                                showSimulationBadge:
+                                    dashboard.facility.isSimulated,
                               ),
                             ),
                             IconButton.filledTonal(
@@ -94,7 +96,10 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
                         ),
                         const SizedBox(height: 16),
                         if (dashboard.facility.isSimulated) ...[
-                          const SimulationNotice(compact: false, prominent: true),
+                          const SimulationNotice(
+                            compact: false,
+                            prominent: true,
+                          ),
                           const SizedBox(height: 16),
                         ],
                         AnimatedSwitcher(

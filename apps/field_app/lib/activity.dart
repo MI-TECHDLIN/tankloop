@@ -80,9 +80,9 @@ class ActivityScreen extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Queued inspections',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: TankColors.muted,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: TankColors.muted),
                 ),
               ],
             ),
@@ -105,9 +105,9 @@ class ActivityScreen extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Need review',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: TankColors.muted,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: TankColors.muted),
                 ),
               ],
             ),

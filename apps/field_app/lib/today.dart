@@ -82,9 +82,9 @@ class TodayScreen extends ConsumerWidget {
       const SizedBox(height: 8),
       Text(
         'Inspections, lab reviews, and fixes — each dated and accountable.',
-        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: TankColors.muted,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyLarge?.copyWith(color: TankColors.muted),
       ),
       const SizedBox(height: 24),
       HeroSurface(
@@ -147,7 +147,10 @@ class TodayScreen extends ConsumerWidget {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SizedBox(height: artworkSize, child: WaterNetworkArtwork(size: artworkSize)),
+                      SizedBox(
+                        height: artworkSize,
+                        child: WaterNetworkArtwork(size: artworkSize),
+                      ),
                       const SizedBox(height: 16),
                       content,
                     ],
@@ -187,16 +190,16 @@ class TodayScreen extends ConsumerWidget {
                           children: [
                             Text(
                               tasks.length.toString(),
-                              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                color: TankColors.navy,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: Theme.of(context).textTheme.displaySmall
+                                  ?.copyWith(
+                                    color: TankColors.navy,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                             ),
                             Text(
                               'Checks scheduled',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: TankColors.muted,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: TankColors.muted),
                             ),
                           ],
                         ),
@@ -245,16 +248,16 @@ class TodayScreen extends ConsumerWidget {
                           children: [
                             Text(
                               cases.toString(),
-                              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                color: TankColors.navy,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: Theme.of(context).textTheme.displaySmall
+                                  ?.copyWith(
+                                    color: TankColors.navy,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                             ),
                             Text(
                               'Open concerns',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: TankColors.muted,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: TankColors.muted),
                             ),
                           ],
                         ),
@@ -308,8 +311,14 @@ class TodayScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(order.task, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(humanState(wireName(order.state)), style: const TextStyle(color: TankColors.muted)),
+            title: Text(
+              order.task,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              humanState(wireName(order.state)),
+              style: const TextStyle(color: TankColors.muted),
+            ),
             trailing: const Icon(Icons.chevron_right, color: TankColors.muted),
             onTap: () => context.push('/work/${order.id}'),
           ),

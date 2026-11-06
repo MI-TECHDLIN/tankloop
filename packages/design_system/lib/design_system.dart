@@ -406,9 +406,7 @@ class PaperCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: TankColors.paper,
         borderRadius: BorderRadius.circular(radius),
-        boxShadow: elevation > 0
-            ? null
-            : null,
+        boxShadow: elevation > 0 ? null : null,
         border: Border.all(
           color: TankColors.navy.withValues(alpha: .05),
           width: 1,
@@ -515,7 +513,11 @@ class FrostedSkeletonCard extends StatelessWidget {
 }
 
 class TankBrand extends StatelessWidget {
-  const TankBrand({super.key, this.surface = 'FIELD', this.showSimulationBadge = false});
+  const TankBrand({
+    super.key,
+    this.surface = 'FIELD',
+    this.showSimulationBadge = false,
+  });
   final String surface;
   final bool showSimulationBadge;
 
@@ -588,12 +590,19 @@ class SimulationBadge extends StatelessWidget {
     decoration: BoxDecoration(
       color: TankColors.tealDeep.withValues(alpha: .12),
       borderRadius: BorderRadius.circular(compact ? 16 : 20),
-      border: Border.all(color: TankColors.teal.withValues(alpha: .35), width: 1.5),
+      border: Border.all(
+        color: TankColors.teal.withValues(alpha: .35),
+        width: 1.5,
+      ),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.science_outlined, size: compact ? 12 : 14, color: TankColors.teal),
+        Icon(
+          Icons.science_outlined,
+          size: compact ? 12 : 14,
+          color: TankColors.teal,
+        ),
         const SizedBox(width: 6),
         Text(
           'SIMULATED DEMO',
@@ -611,7 +620,11 @@ class SimulationBadge extends StatelessWidget {
 
 /// Inline simulation notice for screen content
 class SimulationNotice extends StatelessWidget {
-  const SimulationNotice({super.key, this.compact = false, this.prominent = false});
+  const SimulationNotice({
+    super.key,
+    this.compact = false,
+    this.prominent = false,
+  });
   final bool compact;
   final bool prominent;
 
@@ -620,7 +633,10 @@ class SimulationNotice extends StatelessWidget {
     container: true,
     label: 'Simulated demonstration. No real water tests.',
     child: Container(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: compact ? 8 : 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 16,
+        vertical: compact ? 8 : 12,
+      ),
       decoration: BoxDecoration(
         color: prominent
             ? TankColors.tealDeep.withValues(alpha: .12)
@@ -741,11 +757,7 @@ class NoticeCard extends StatelessWidget {
   Widget _buildContent() => Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(
-        icon,
-        color: caution ? TankColors.amber : TankColors.teal,
-        size: 22,
-      ),
+      Icon(icon, color: caution ? TankColors.amber : TankColors.teal, size: 22),
       const SizedBox(width: 12),
       Expanded(
         child: Column(
@@ -763,7 +775,9 @@ class NoticeCard extends StatelessWidget {
             Text(
               message,
               style: TextStyle(
-                color: prominent ? Colors.white.withValues(alpha: .9) : TankColors.muted,
+                color: prominent
+                    ? Colors.white.withValues(alpha: .9)
+                    : TankColors.muted,
                 height: 1.5,
               ),
             ),

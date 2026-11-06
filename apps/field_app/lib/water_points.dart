@@ -31,10 +31,7 @@ class WaterPointsScreen extends ConsumerWidget {
   }
 
   List<Widget> _content(BuildContext context, FieldRuntime runtime) => [
-    Text(
-      'Follow the water.',
-      style: Theme.of(context).textTheme.displayMedium,
-    ),
+    Text('Follow the water.', style: Theme.of(context).textTheme.displayMedium),
     const SizedBox(height: 8),
     Text(
       runtime.dashboard.facility.label,
@@ -47,7 +44,9 @@ class WaterPointsScreen extends ConsumerWidget {
         children: [
           Text(
             'Water flows through this network',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(color: Colors.white),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -123,15 +122,23 @@ class WaterPointsScreen extends ConsumerWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(point.label, style: Theme.of(context).textTheme.headlineSmall),
+                    child: Text(
+                      point.label,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
                   ),
                   if (point.isSimulated)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: TankColors.navy.withValues(alpha: .08),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: TankColors.navy.withValues(alpha: .15)),
+                        border: Border.all(
+                          color: TankColors.navy.withValues(alpha: .15),
+                        ),
                       ),
                       child: Text(
                         'SIMULATED',
@@ -208,8 +215,8 @@ class WaterPointsScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                    icon: const Icon(Icons.qr_code_2_rounded),
-                    label: const Text('Show QR label'),
+                      icon: const Icon(Icons.qr_code_2_rounded),
+                      label: const Text('Show QR label'),
                     ),
                     OutlinedButton.icon(
                       onPressed: () async {
