@@ -76,16 +76,18 @@ class TodayScreen extends ConsumerWidget {
       ),
       const SizedBox(height: 8),
       Text(
-        'Small checks.\nA clearer picture.',
-        style: Theme.of(context).textTheme.displaySmall,
+        'Every check leaves a record.',
+        style: Theme.of(context).textTheme.displayMedium,
       ),
-      const SizedBox(height: 12),
-      const Text(
-        'Every observation helps someone take the next step.',
-        style: TextStyle(color: TankColors.muted),
+      const SizedBox(height: 8),
+      Text(
+        'Inspections, lab reviews, and fixes — each dated and accountable.',
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: TankColors.muted,
+        ),
       ),
       const SizedBox(height: 24),
-      GlassCard(
+      HeroSurface(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final content = Column(
@@ -97,18 +99,21 @@ class TodayScreen extends ConsumerWidget {
                     fontSize: 11,
                     letterSpacing: 1.6,
                     fontWeight: FontWeight.w700,
-                    color: TankColors.teal,
+                    color: Colors.white70,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   data.facility.label,
-                  style: Theme.of(context).textTheme.headlineMedium,
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '${data.assets.length} connected assets · ${data.points.length} sampling points',
-                  style: const TextStyle(color: TankColors.muted),
+                  style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 20),
                 FilledButton.icon(
@@ -119,22 +124,31 @@ class TodayScreen extends ConsumerWidget {
                   label: Text(
                     tasks.isEmpty ? 'View activity' : 'Start inspection',
                   ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: TankColors.tealDeep,
+                  ),
                 ),
               ],
             );
+            final artworkSize = constraints.maxWidth > 620 ? 280.0 : 320.0;
             return constraints.maxWidth > 620
                 ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(flex: 3, child: content),
                       const SizedBox(width: 24),
-                      const Expanded(flex: 2, child: WaterNetworkArtwork()),
+                      Expanded(
+                        flex: 2,
+                        child: WaterNetworkArtwork(size: artworkSize),
+                      ),
                     ],
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: 152, child: WaterNetworkArtwork()),
-                      const SizedBox(height: 8),
+                      SizedBox(height: artworkSize, child: WaterNetworkArtwork(size: artworkSize)),
+                      const SizedBox(height: 16),
                       content,
                     ],
                   );
@@ -142,28 +156,127 @@ class TodayScreen extends ConsumerWidget {
         ),
       ),
       const SizedBox(height: 16),
+      // Consolidated metrics row
       Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: _metric(
-              '$due',
-              'Checks due',
-              'Due soon or overdue',
-              Icons.fact_check_outlined,
+            child: GlassCard(
+              padding: const EdgeInsets.all(20),
+              radius: TankSpace.radiusStandard,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: TankColors.mint,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.event_note_outlined,
+                          color: TankColors.teal,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tasks.length.toString(),
+                              style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                color: TankColors.navy,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              'Checks scheduled',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: TankColors.muted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (due > 0) ...[
+                    const SizedBox(height: 8),
+                    StatusPill(
+                      '$due due in 24h',
+                      icon: Icons.schedule_rounded,
+                      caution: true,
+                      compact: true,
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: _metric(
-              '$cases',
-              'Open concerns',
-              'Workload, not a safety score',
-              Icons.flag_outlined,
+            child: GlassCard(
+              padding: const EdgeInsets.all(20),
+              radius: TankSpace.radiusStandard,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: TankColors.caution,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.fact_check_outlined,
+                          color: TankColors.amber,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              cases.toString(),
+                              style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                color: TankColors.navy,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              'Open concerns',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: TankColors.muted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (cases > 0) ...[
+                    const SizedBox(height: 8),
+                    StatusPill(
+                      'Awaiting resolution',
+                      icon: Icons.hourglass_empty_rounded,
+                      caution: true,
+                      compact: true,
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ],
       ),
+      const SizedBox(height: 16),
       SectionHeading(
         'Your next checks',
         trailing: StatusPill(
@@ -191,11 +304,13 @@ class TodayScreen extends ConsumerWidget {
       for (final order in runtime.dashboard.workOrders.where(
         (o) => o.assigneeId == runtime.dashboard.actorId,
       ))
-        Card(
+        DenseCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: ListTile(
-            title: Text(order.task),
-            subtitle: Text(humanState(wireName(order.state))),
-            trailing: const Icon(Icons.chevron_right),
+            contentPadding: EdgeInsets.zero,
+            title: Text(order.task, style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text(humanState(wireName(order.state)), style: const TextStyle(color: TankColors.muted)),
+            trailing: const Icon(Icons.chevron_right, color: TankColors.muted),
             onTap: () => context.push('/work/${order.id}'),
           ),
         ),
@@ -216,32 +331,6 @@ class TodayScreen extends ConsumerWidget {
       ),
     ];
   }
-
-  Widget _metric(String value, String title, String subtitle, IconData icon) =>
-      GlassCard(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: TankColors.teal, size: 22),
-            const SizedBox(height: 16),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -1,
-              ),
-            ),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: const TextStyle(fontSize: 12, color: TankColors.muted),
-            ),
-          ],
-        ),
-      );
 
   Widget _inspectionTile(
     BuildContext context,

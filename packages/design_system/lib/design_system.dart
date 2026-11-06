@@ -2,23 +2,38 @@ library;
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 abstract final class TankColors {
   static const navy = Color(0xFF102A43);
   static const teal = Color(0xFF0F766E);
+  static const tealDeep = Color(0xFF0D5E56);
   static const mint = Color(0xFFEDF6F5);
   static const canvas = Color(0xFFF6F8FA);
+  static const paper = Color(0xFFF4EFE9);
+  static const paperDeep = Color(0xFFE8E0D4);
   static const caution = Color(0xFFFFF0DF);
   static const muted = Color(0xFF526777);
   static const amber = Color(0xFF88501C);
+  static const white = Colors.white;
+  static const black = Colors.black;
 }
 
 abstract final class TankSpace {
   static const unit = 4.0;
   static const screen = 16.0;
   static const card = 24.0;
-  static const radius = 28.0;
+  static const radiusHero = 28.0;
+  static const radiusStandard = 20.0;
+  static const radiusDense = 12.0;
   static const target = 48.0;
+  static const navHeight = 72.0;
+}
+
+abstract final class TankElevation {
+  static const hero = 8.0;
+  static const standard = 2.0;
+  static const dense = 0.0;
 }
 
 ThemeData tankLoopTheme() {
@@ -30,52 +45,108 @@ ThemeData tankLoopTheme() {
     onSurface: TankColors.navy,
   );
   final base = ThemeData(useMaterial3: true, colorScheme: scheme);
+
+  // Display typeface: Playfair Display for headlines only
+  final displayFont = GoogleFonts.playfairDisplay(
+    fontWeight: FontWeight.w700,
+    color: TankColors.navy,
+  );
+  final displayFontMedium = GoogleFonts.playfairDisplay(
+    fontWeight: FontWeight.w500,
+    color: TankColors.navy,
+  );
+  final displayFontLight = GoogleFonts.playfairDisplay(
+    fontWeight: FontWeight.w400,
+    color: TankColors.navy,
+  );
+
   return base.copyWith(
     scaffoldBackgroundColor: Colors.transparent,
     textTheme: base.textTheme
         .apply(bodyColor: TankColors.navy, displayColor: TankColors.navy)
         .copyWith(
-          displaySmall: const TextStyle(
-            fontSize: 44,
-            height: 1.12,
-            letterSpacing: -1.8,
-            fontWeight: FontWeight.w800,
-            color: TankColors.navy,
+          displayLarge: displayFontLight.copyWith(
+            fontSize: 52,
+            height: 1.1,
+            letterSpacing: -2.0,
+            fontWeight: FontWeight.w400,
           ),
-          headlineLarge: const TextStyle(
-            fontSize: 36,
-            height: 1.16,
-            letterSpacing: -1.2,
-            fontWeight: FontWeight.w800,
-            color: TankColors.navy,
-          ),
-          headlineMedium: const TextStyle(
-            fontSize: 28,
-            height: 1.2,
-            letterSpacing: -.7,
+          displayMedium: displayFont.copyWith(
+            fontSize: 40,
+            height: 1.15,
+            letterSpacing: -1.6,
             fontWeight: FontWeight.w700,
-            color: TankColors.navy,
           ),
-          titleLarge: const TextStyle(
+          displaySmall: displayFontMedium.copyWith(
+            fontSize: 32,
+            height: 1.2,
+            letterSpacing: -1.0,
+            fontWeight: FontWeight.w600,
+          ),
+          headlineLarge: displayFont.copyWith(
+            fontSize: 28,
+            height: 1.25,
+            letterSpacing: -.8,
+            fontWeight: FontWeight.w700,
+          ),
+          headlineMedium: displayFontMedium.copyWith(
             fontSize: 22,
             height: 1.3,
-            fontWeight: FontWeight.w700,
+            letterSpacing: -.6,
+            fontWeight: FontWeight.w600,
+          ),
+          headlineSmall: displayFontMedium.copyWith(
+            fontSize: 18,
+            height: 1.35,
+            fontWeight: FontWeight.w600,
+          ),
+          titleLarge: displayFontMedium.copyWith(
+            fontSize: 20,
+            height: 1.3,
+            fontWeight: FontWeight.w600,
+          ),
+          titleMedium: const TextStyle(
+            fontSize: 16,
+            height: 1.45,
+            fontWeight: FontWeight.w600,
+            color: TankColors.navy,
+          ),
+          titleSmall: const TextStyle(
+            fontSize: 14,
+            height: 1.45,
+            fontWeight: FontWeight.w600,
             color: TankColors.navy,
           ),
           bodyLarge: const TextStyle(
             fontSize: 16,
-            height: 1.5,
+            height: 1.55,
             color: TankColors.navy,
           ),
           bodyMedium: const TextStyle(
             fontSize: 15,
-            height: 1.5,
+            height: 1.55,
             color: TankColors.navy,
+          ),
+          bodySmall: const TextStyle(
+            fontSize: 13,
+            height: 1.5,
+            color: TankColors.muted,
           ),
           labelLarge: const TextStyle(
             fontSize: 15,
             height: 1.25,
             fontWeight: FontWeight.w700,
+          ),
+          labelMedium: const TextStyle(
+            fontSize: 13,
+            height: 1.25,
+            fontWeight: FontWeight.w600,
+          ),
+          labelSmall: const TextStyle(
+            fontSize: 11,
+            height: 1.25,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
         ),
     filledButtonTheme: FilledButtonThemeData(
@@ -83,6 +154,7 @@ ThemeData tankLoopTheme() {
         minimumSize: const Size(48, 52),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: const StadiumBorder(),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -92,12 +164,14 @@ ThemeData tankLoopTheme() {
         side: const BorderSide(color: Color(0xFFB3C9C7)),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: const StadiumBorder(),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         minimumSize: const Size(48, 48),
         foregroundColor: TankColors.teal,
+        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       ),
     ),
     iconButtonTheme: IconButtonThemeData(
@@ -115,11 +189,17 @@ ThemeData tankLoopTheme() {
         borderRadius: BorderRadius.circular(20),
         borderSide: const BorderSide(color: Color(0xFFC2D8D5)),
       ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: const BorderSide(color: TankColors.teal, width: 2),
+      ),
+      labelStyle: const TextStyle(color: TankColors.muted),
+      hintStyle: const TextStyle(color: TankColors.muted),
     ),
     chipTheme: base.chipTheme.copyWith(
       shape: const StadiumBorder(),
       side: BorderSide.none,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       selectedColor: TankColors.mint,
       labelStyle: const TextStyle(
         color: TankColors.navy,
@@ -146,7 +226,7 @@ class TankBackdrop extends StatelessWidget {
           Color(0xFFDDF3EF),
           Color(0xFFEDF3F8),
           TankColors.canvas,
-          Color(0xFFF4EFE9),
+          TankColors.paper,
         ],
         stops: [0, .35, .78, 1],
       ),
@@ -155,29 +235,93 @@ class TankBackdrop extends StatelessWidget {
   );
 }
 
+/// Hero card - deepest surface, reserved for the single most important block per screen
+class HeroSurface extends StatelessWidget {
+  const HeroSurface({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(28),
+    this.color,
+  });
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(TankSpace.radiusHero),
+      boxShadow: [
+        BoxShadow(
+          color: TankColors.tealDeep.withValues(alpha: .18),
+          offset: const Offset(0, 16),
+          blurRadius: 48,
+        ),
+        BoxShadow(
+          color: TankColors.navy.withValues(alpha: .08),
+          offset: const Offset(0, 6),
+          blurRadius: 20,
+        ),
+      ],
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(TankSpace.radiusHero),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            color: color ?? TankColors.tealDeep,
+            borderRadius: BorderRadius.circular(TankSpace.radiusHero),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: .18),
+              width: 1,
+            ),
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: DefaultTextStyle(
+              style: const TextStyle(color: Colors.white),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Standard content card - frosted glass
 class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(24),
     this.color,
-    this.radius = 28,
+    this.radius = TankSpace.radiusStandard,
+    this.elevation = TankElevation.standard,
+    this.border = true,
   });
   final Widget child;
   final EdgeInsetsGeometry padding;
   final Color? color;
   final double radius;
+  final double elevation;
+  final bool border;
+
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(radius),
-      boxShadow: [
-        BoxShadow(
-          color: TankColors.navy.withValues(alpha: .04),
-          offset: const Offset(0, 8),
-          blurRadius: 32,
-        ),
-      ],
+      boxShadow: elevation > 0
+          ? [
+              BoxShadow(
+                color: TankColors.navy.withValues(alpha: .05),
+                offset: Offset(0, elevation * 2.5),
+                blurRadius: elevation * 10,
+              ),
+            ]
+          : null,
     ),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(radius),
@@ -186,16 +330,91 @@ class GlassCard extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: color ?? Colors.white.withValues(alpha: .72),
+            color: color ?? Colors.white.withValues(alpha: .78),
             borderRadius: BorderRadius.circular(radius),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: .9),
-              width: 1.25,
-            ),
+            border: border
+                ? Border.all(
+                    color: Colors.white.withValues(alpha: .95),
+                    width: 1.25,
+                  )
+                : null,
           ),
           child: Material(type: MaterialType.transparency, child: child),
         ),
       ),
+    ),
+  );
+}
+
+/// Dense card - flat surface for list rows
+class DenseCard extends StatelessWidget {
+  const DenseCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.color,
+  });
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: padding,
+    decoration: BoxDecoration(
+      color: color ?? TankColors.paper.withValues(alpha: .7),
+      borderRadius: BorderRadius.circular(TankSpace.radiusDense),
+      border: Border.all(
+        color: TankColors.navy.withValues(alpha: .06),
+        width: 1,
+      ),
+    ),
+    child: Material(type: MaterialType.transparency, child: child),
+  );
+}
+
+/// Paper card - warm paper surface for record/print moments
+class PaperCard extends StatelessWidget {
+  const PaperCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(24),
+    this.radius = TankSpace.radiusStandard,
+    this.elevation = TankElevation.standard,
+  });
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+  final double elevation;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(radius),
+      boxShadow: elevation > 0
+          ? [
+              BoxShadow(
+                color: TankColors.navy.withValues(alpha: .05),
+                offset: Offset(0, elevation * 2),
+                blurRadius: elevation * 8,
+              ),
+            ]
+          : null,
+    ),
+    child: Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: TankColors.paper,
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: elevation > 0
+            ? null
+            : null,
+        border: Border.all(
+          color: TankColors.navy.withValues(alpha: .05),
+          width: 1,
+        ),
+      ),
+      child: Material(type: MaterialType.transparency, child: child),
     ),
   );
 }
@@ -296,8 +515,10 @@ class FrostedSkeletonCard extends StatelessWidget {
 }
 
 class TankBrand extends StatelessWidget {
-  const TankBrand({super.key, this.surface = 'FIELD'});
+  const TankBrand({super.key, this.surface = 'FIELD', this.showSimulationBadge = false});
   final String surface;
+  final bool showSimulationBadge;
+
   @override
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,
@@ -323,12 +544,13 @@ class TankBrand extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'tankloop',
-                style: TextStyle(
+                style: GoogleFonts.playfairDisplay(
                   fontSize: 22,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: -.7,
+                  color: TankColors.navy,
                 ),
               ),
               Text(
@@ -344,7 +566,94 @@ class TankBrand extends StatelessWidget {
           ),
         ),
       ),
+      if (showSimulationBadge) ...[
+        const SizedBox(width: 10),
+        const SimulationBadge(),
+      ],
     ],
+  );
+}
+
+/// Prominent simulation badge - designed to be visible beside the brand
+class SimulationBadge extends StatelessWidget {
+  const SimulationBadge({super.key, this.compact = false});
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: EdgeInsets.symmetric(
+      horizontal: compact ? 10 : 12,
+      vertical: compact ? 4 : 6,
+    ),
+    decoration: BoxDecoration(
+      color: TankColors.tealDeep.withValues(alpha: .12),
+      borderRadius: BorderRadius.circular(compact ? 16 : 20),
+      border: Border.all(color: TankColors.teal.withValues(alpha: .35), width: 1.5),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.science_outlined, size: compact ? 12 : 14, color: TankColors.teal),
+        const SizedBox(width: 6),
+        Text(
+          'SIMULATED DEMO',
+          style: TextStyle(
+            fontSize: compact ? 10 : 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: compact ? 0.5 : 0.8,
+            color: TankColors.tealDeep,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Inline simulation notice for screen content
+class SimulationNotice extends StatelessWidget {
+  const SimulationNotice({super.key, this.compact = false, this.prominent = false});
+  final bool compact;
+  final bool prominent;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    label: 'Simulated demonstration. No real water tests.',
+    child: Container(
+      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: compact ? 8 : 12),
+      decoration: BoxDecoration(
+        color: prominent
+            ? TankColors.tealDeep.withValues(alpha: .12)
+            : TankColors.navy.withValues(alpha: .06),
+        borderRadius: BorderRadius.circular(compact ? 16 : 20),
+        border: prominent
+            ? Border.all(color: TankColors.teal.withValues(alpha: .3), width: 1)
+            : null,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.science_outlined,
+            size: compact ? 18 : 20,
+            color: prominent ? TankColors.teal : TankColors.muted,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              compact
+                  ? 'SIMULATED DATA · No real water tests'
+                  : 'SIMULATED DEMONSTRATION\nGenerated records, not real water tests.',
+              style: TextStyle(
+                fontSize: compact ? 12 : 13,
+                height: 1.5,
+                fontWeight: FontWeight.w600,
+                color: prominent ? TankColors.tealDeep : TankColors.navy,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
   );
 }
 
@@ -355,16 +664,19 @@ class StatusPill extends StatelessWidget {
     this.icon = Icons.info_outline_rounded,
     this.caution = false,
     this.compact = false,
+    this.color,
   });
   final String label;
   final IconData icon;
   final bool caution;
   final bool compact;
+  final Color? color;
+
   @override
   Widget build(BuildContext context) => Container(
     padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 12, vertical: 8),
     decoration: BoxDecoration(
-      color: caution ? TankColors.caution : TankColors.mint,
+      color: color ?? (caution ? TankColors.caution : TankColors.mint),
       borderRadius: BorderRadius.circular(24),
     ),
     child: Row(
@@ -391,41 +703,6 @@ class StatusPill extends StatelessWidget {
   );
 }
 
-class SimulationNotice extends StatelessWidget {
-  const SimulationNotice({super.key, this.compact = false});
-  final bool compact;
-  @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    label: 'Simulated demonstration. No real water tests.',
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: TankColors.navy.withValues(alpha: .06),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.science_outlined, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              compact
-                  ? 'SIMULATED DATA · No real water tests'
-                  : 'SIMULATED DEMONSTRATION\nGenerated records, not real water tests.',
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
 class NoticeCard extends StatelessWidget {
   const NoticeCard({
     super.key,
@@ -434,57 +711,89 @@ class NoticeCard extends StatelessWidget {
     this.icon = Icons.info_outline_rounded,
     this.caution = false,
     this.action,
+    this.prominent = false,
+    this.paperSurface = false,
   });
   final String title;
   final String message;
   final IconData icon;
   final bool caution;
   final Widget? action;
+  final bool prominent;
+  final bool paperSurface;
+
   @override
-  Widget build(BuildContext context) => GlassCard(
-    color: caution ? TankColors.caution.withValues(alpha: .9) : null,
-    padding: const EdgeInsets.all(20),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: caution ? TankColors.amber : TankColors.teal),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
+  Widget build(BuildContext context) {
+    final cardChild = _buildContent();
+    if (prominent) {
+      return HeroSurface(padding: const EdgeInsets.all(20), child: cardChild);
+    }
+    if (paperSurface) {
+      return PaperCard(padding: const EdgeInsets.all(20), child: cardChild);
+    }
+    return GlassCard(
+      color: caution ? TankColors.caution.withValues(alpha: .9) : null,
+      padding: const EdgeInsets.all(20),
+      child: cardChild,
+    );
+  }
+
+  Widget _buildContent() => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Icon(
+        icon,
+        color: caution ? TankColors.amber : TankColors.teal,
+        size: 22,
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: prominent ? Colors.white : TankColors.navy,
               ),
-              const SizedBox(height: 4),
-              Text(message, style: const TextStyle(color: TankColors.muted)),
-              if (action != null)
-                Padding(padding: const EdgeInsets.only(top: 8), child: action!),
-            ],
-          ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              message,
+              style: TextStyle(
+                color: prominent ? Colors.white.withValues(alpha: .9) : TankColors.muted,
+                height: 1.5,
+              ),
+            ),
+            if (action != null)
+              Padding(padding: const EdgeInsets.only(top: 8), child: action!),
+          ],
         ),
-      ],
-    ),
+      ),
+    ],
   );
 }
 
 class SectionHeading extends StatelessWidget {
-  const SectionHeading(this.title, {super.key, this.trailing});
+  const SectionHeading(this.title, {super.key, this.trailing, this.style});
   final String title;
   final Widget? trailing;
+  final TextStyle? style;
+
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(top: 28, bottom: 16),
     child: Row(
       children: [
         Expanded(
-          child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+          child: Text(
+            title,
+            style: style ?? Theme.of(context).textTheme.headlineSmall,
+          ),
         ),
-        ?trailing,
+        if (trailing != null) trailing!,
       ],
     ),
   );
@@ -495,9 +804,11 @@ class FloatingNav extends StatelessWidget {
     super.key,
     required this.selected,
     required this.onSelected,
+    this.onHeightMeasured,
   });
   final int selected;
   final ValueChanged<int> onSelected;
+  final ValueChanged<double>? onHeightMeasured;
   static const icons = [
     Icons.today_outlined,
     Icons.account_tree_outlined,
@@ -506,6 +817,7 @@ class FloatingNav extends StatelessWidget {
     Icons.person_outline_rounded,
   ];
   static const labels = ['Today', 'Water', 'Cases', 'Activity', 'Profile'];
+
   @override
   Widget build(BuildContext context) => SafeArea(
     top: false,
@@ -515,7 +827,8 @@ class FloatingNav extends StatelessWidget {
         heightFactor: 1,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
-          child: GlassCard(
+          child: _MeasuredGlassCard(
+            onHeightMeasured: onHeightMeasured,
             radius: 28,
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             child: Row(
@@ -585,16 +898,56 @@ class FloatingNav extends StatelessWidget {
   );
 }
 
+class _MeasuredGlassCard extends StatefulWidget {
+  const _MeasuredGlassCard({
+    required this.child,
+    required this.radius,
+    required this.padding,
+    this.onHeightMeasured,
+  });
+  final Widget child;
+  final double radius;
+  final EdgeInsetsGeometry padding;
+  final ValueChanged<double>? onHeightMeasured;
+
+  @override
+  State<_MeasuredGlassCard> createState() => _MeasuredGlassCardState();
+}
+
+class _MeasuredGlassCardState extends State<_MeasuredGlassCard> {
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final renderBox = context.findRenderObject() as RenderBox?;
+          if (renderBox != null && widget.onHeightMeasured != null) {
+            widget.onHeightMeasured!(renderBox.size.height);
+          }
+        });
+        return GlassCard(
+          radius: widget.radius,
+          padding: widget.padding,
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
+
 /// Original vector artwork, drawn from product topology rather than stock or
 /// third-party inspiration assets. It stays static when reduce motion is on.
 class WaterNetworkArtwork extends StatelessWidget {
-  const WaterNetworkArtwork({super.key});
+  const WaterNetworkArtwork({super.key, this.size = 220});
+  final double size;
+
   @override
   Widget build(BuildContext context) => Semantics(
     label: 'A borehole connected to an overhead storage tank and tap',
     image: true,
-    child: const AspectRatio(
-      aspectRatio: 1.5,
+    child: SizedBox(
+      width: size * 1.5,
+      height: size,
       child: CustomPaint(painter: _WaterPainter()),
     ),
   );

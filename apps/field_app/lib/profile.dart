@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tankloop_data/data.dart';
-import 'package:tankloop_design_system/design_system.dart';
+import 'package:tankloop_design_system/design_system.dart'
+    hide SimulationNotice;
 import 'package:tankloop_localization/localization.dart';
 import 'runtime.dart';
 
@@ -48,28 +49,28 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   List<Widget> _content(BuildContext context, FieldRuntime runtime) => [
-    Text('Your field space.', style: Theme.of(context).textTheme.headlineLarge),
+    Text('Your field space.', style: Theme.of(context).textTheme.displayMedium),
     const SizedBox(height: 24),
-    GlassCard(
+    HeroSurface(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             runtime.dashboard.facility.label,
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
           ),
           const SizedBox(height: 8),
-          const Text('Field inspector · English'),
+          const Text('Field inspector · English', style: TextStyle(color: Colors.white70)),
           const SizedBox(height: 16),
           Text(
             runtime.config.mode == AppMode.simulation
                 ? 'Deterministic simulation · Seed ${runtime.config.seed}'
                 : 'Supabase · ${Uri.parse(runtime.config.supabaseUrl).host}',
-            style: const TextStyle(color: TankColors.muted),
+            style: const TextStyle(color: Colors.white70),
           ),
           Text(
             'Record clock: ${recordTime(runtime.dashboard.asOf)}',
-            style: const TextStyle(color: TankColors.muted),
+            style: const TextStyle(color: Colors.white70),
           ),
         ],
       ),
@@ -104,13 +105,18 @@ class ProfileScreen extends ConsumerWidget {
                   : () => _perform(context, runtime.advanceDay),
               icon: const Icon(Icons.fast_forward_outlined),
               label: const Text('Advance 1 day'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: TankColors.tealDeep,
+              ),
             ),
           ],
         ],
       ),
     ),
     const SizedBox(height: 20),
-    const NoticeCard(
+    NoticeCard(
+      prominent: true,
       title: 'Evidence, with its limits',
       message:
           'Inspections record observed risks. They do not detect contamination. Simulated records are never real laboratory or pilot evidence.',

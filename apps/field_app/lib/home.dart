@@ -17,6 +17,9 @@ class FieldHome extends ConsumerStatefulWidget {
 
 class _FieldHomeState extends ConsumerState<FieldHome> {
   int selected = 0;
+  double _navHeight = TankSpace.navHeight;
+  final GlobalKey _navKey = GlobalKey();
+
   Future<void> _perform(Future<void> Function() action) async {
     try {
       await action();
@@ -36,6 +39,10 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
   @override
   Widget build(BuildContext context) {
     final runtime = ref.watch(runtimeProvider);
+    final mediaQuery = MediaQuery.of(context);
+    final bottomInset = mediaQuery.viewPadding.bottom + mediaQuery.viewInsets.bottom;
+    final effectiveNavHeight = _navHeight + bottomInset + TankSpace.screen;
+
     return AnimatedBuilder(
       animation: Listenable.merge([
         runtime,
@@ -53,13 +60,23 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 960),
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
+                    padding: EdgeInsets.fromLTRB(
+                      TankSpace.screen,
+                      TankSpace.screen + 8,
+                      TankSpace.screen,
+                      effectiveNavHeight,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Row(
                           children: [
-                            const Expanded(child: TankBrand()),
+                            Expanded(
+                              child: TankBrand(
+                                surface: 'FIELD',
+                                showSimulationBadge: dashboard.facility.isSimulated,
+                              ),
+                            ),
                             IconButton.filledTonal(
                               tooltip: 'Refresh assignments',
                               onPressed: runtime.refreshing
@@ -73,41 +90,55 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
                               onPressed: () => context.push('/scan'),
                               icon: const Icon(Icons.qr_code_scanner_rounded),
                             ),
-                            const SizedBox(width: 8),
-                            IconButton.filledTonal(
-                              tooltip: 'Profile and exercise controls',
-                              onPressed: () => setState(() => selected = 4),
-                              icon: const Icon(Icons.person_outline_rounded),
-                            ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         if (dashboard.facility.isSimulated) ...[
-                          const SimulationNotice(compact: true),
-                          const SizedBox(height: 20),
+                          const SimulationNotice(compact: false, prominent: true),
+                          const SizedBox(height: 16),
                         ],
-                        switch (selected) {
-                          0 => TodayScreen(
-                            onActivity: () => setState(() => selected = 3),
-                          ),
-                          1 => const WaterPointsScreen(),
-                          2 => const CasesScreen(),
-                          3 => const ActivityScreen(),
-                          _ => const ProfileScreen(),
-                        },
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          child: _screenFor(selected),
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
             ),
-            bottomNavigationBar: FloatingNav(
-              selected: selected,
-              onSelected: (value) => setState(() => selected = value),
+            bottomNavigationBar: Padding(
+              key: _navKey,
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: FloatingNav(
+                selected: selected,
+                onSelected: (value) => setState(() => selected = value),
+                onHeightMeasured: (h) => setState(() => _navHeight = h),
+              ),
             ),
           ),
         );
       },
     );
+  }
+
+  Widget _screenFor(int index) {
+    switch (index) {
+      case 0:
+        return TodayScreen(
+          key: const ValueKey('today'),
+          onActivity: () => setState(() => selected = 3),
+        );
+      case 1:
+        return const WaterPointsScreen(key: ValueKey('water'));
+      case 2:
+        return const CasesScreen(key: ValueKey('cases'));
+      case 3:
+        return const ActivityScreen(key: ValueKey('activity'));
+      default:
+        return const ProfileScreen(key: ValueKey('profile'));
+    }
   }
 }

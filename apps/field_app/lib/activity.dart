@@ -58,12 +58,62 @@ class ActivityScreen extends ConsumerWidget {
   List<Widget> _content(BuildContext context, FieldRuntime runtime) => [
     Text(
       'Nothing lost\nbetween connections.',
-      style: Theme.of(context).textTheme.headlineLarge,
+      style: Theme.of(context).textTheme.displayMedium,
     ),
     const SizedBox(height: 16),
-    Text(
-      '${runtime.pendingCount} queued · ${runtime.outbox.blockedCount} need review',
-      style: const TextStyle(color: TankColors.muted),
+    // Status summary cards
+    Row(
+      children: [
+        Expanded(
+          child: GlassCard(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  runtime.pendingCount.toString(),
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    color: TankColors.navy,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Queued inspections',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: TankColors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: GlassCard(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  runtime.outbox.blockedCount.toString(),
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    color: TankColors.navy,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Need review',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: TankColors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     ),
     const SizedBox(height: 20),
     FilledButton.icon(
@@ -122,10 +172,13 @@ class ActivityScreen extends ConsumerWidget {
       ),
     const SectionHeading('Work-order steps'),
     for (final entry in runtime.workOutbox.entries.reversed)
-      Card(
+      DenseCard(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: ListTile(
+          contentPadding: EdgeInsets.zero,
           title: Text(
             entry.error == null ? draftLabel(entry.state) : 'Sync failed',
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           subtitle: Text(entry.error ?? entry.command.notes),
           onTap: () => context.push('/work/${entry.command.orderId}'),
@@ -141,6 +194,7 @@ class ActivityScreen extends ConsumerWidget {
       Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: NoticeCard(
+          paperSurface: true,
           title: runtime.dashboard.assetFor(task).label,
           message:
               'Received ${recordTime(task.submittedAt!)} · Checklist v${runtime.dashboard.templateFor(task).version}',
