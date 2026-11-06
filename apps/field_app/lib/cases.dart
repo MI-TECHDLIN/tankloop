@@ -30,10 +30,11 @@ class CasesScreen extends ConsumerWidget {
   List<Widget> _content(BuildContext context, FieldRuntime runtime) => [
     Text(
       'Every concern.\nAn accountable next step.',
-      style: Theme.of(context).textTheme.headlineLarge,
+      style: Theme.of(context).textTheme.displayMedium,
     ),
     const SizedBox(height: 16),
-    const NoticeCard(
+    NoticeCard(
+      prominent: true,
       title: 'Repair is not resolution',
       message:
           'Cases remain open until the applicable follow-up evidence is reviewed and communication is recorded.',
@@ -76,7 +77,10 @@ class CasesScreen extends ConsumerWidget {
               if (item.dueAt != null)
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Response due ${recordTime(item.dueAt!)}'),
+                  child: Text(
+                    'Response due ${recordTime(item.dueAt!)}',
+                    style: const TextStyle(color: TankColors.muted),
+                  ),
                 ),
               for (final event in item.events)
                 Padding(
@@ -94,6 +98,7 @@ class CasesScreen extends ConsumerWidget {
                   padding: EdgeInsets.only(top: 12),
                   child: Text(
                     'Privileged transitions and audit are available through the server RPCs.',
+                    style: TextStyle(color: TankColors.muted),
                   ),
                 ),
             ],

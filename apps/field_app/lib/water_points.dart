@@ -31,14 +31,29 @@ class WaterPointsScreen extends ConsumerWidget {
   }
 
   List<Widget> _content(BuildContext context, FieldRuntime runtime) => [
-    Text('Follow the water.', style: Theme.of(context).textTheme.headlineLarge),
-    const SizedBox(height: 12),
+    Text('Follow the water.', style: Theme.of(context).textTheme.displayMedium),
+    const SizedBox(height: 8),
     Text(
       runtime.dashboard.facility.label,
       style: const TextStyle(color: TankColors.muted),
     ),
     const SizedBox(height: 24),
-    const GlassCard(child: SizedBox(height: 200, child: WaterNetworkArtwork())),
+    HeroSurface(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        children: [
+          Text(
+            'Water flows through this network',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(color: Colors.white),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          const WaterNetworkArtwork(size: 280),
+        ],
+      ),
+    ),
     const SectionHeading('Connected assets'),
     GlassCard(
       child: Column(
@@ -48,13 +63,20 @@ class WaterPointsScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
                 children: [
-                  Icon(
-                    asset.type == AssetType.tap
-                        ? Icons.water_drop_outlined
-                        : asset.type == AssetType.tank
-                        ? Icons.water_outlined
-                        : Icons.account_tree_outlined,
-                    color: TankColors.teal,
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: TankColors.mint,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      asset.type == AssetType.tap
+                          ? Icons.water_drop_outlined
+                          : asset.type == AssetType.tank
+                          ? Icons.water_outlined
+                          : Icons.account_tree_outlined,
+                      color: TankColors.teal,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -97,7 +119,39 @@ class WaterPointsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(point.label, style: Theme.of(context).textTheme.titleLarge),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      point.label,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ),
+                  if (point.isSimulated)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: TankColors.navy.withValues(alpha: .08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: TankColors.navy.withValues(alpha: .15),
+                        ),
+                      ),
+                      child: Text(
+                        'SIMULATED',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: TankColors.teal,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 8),
               const Text(
                 'A dated record and open concerns, accessible without signing in.',
@@ -124,10 +178,14 @@ class WaterPointsScreen extends ConsumerWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 if (point.isSimulated)
-                                  const Text(
-                                    'SIMULATED POINT',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
+                                  const Padding(
+                                    padding: EdgeInsets.only(bottom: 12),
+                                    child: Text(
+                                      'SIMULATED POINT',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: TankColors.teal,
+                                      ),
                                     ),
                                   ),
                                 QrImageView(

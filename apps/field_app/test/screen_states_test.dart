@@ -16,6 +16,7 @@ import 'package:tankloop_field/work_order.dart';
 import 'package:tankloop_offline_sync/offline_sync.dart';
 
 void main() {
+  debugDisableSkeletonAnimations = true;
   for (final screen in [
     'today',
     'water',
