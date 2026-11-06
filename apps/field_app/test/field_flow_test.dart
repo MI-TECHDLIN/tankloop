@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tankloop_data/data.dart';
+import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:tankloop_field/main.dart';
 import 'package:tankloop_field/runtime.dart';
@@ -35,6 +36,7 @@ class UnavailableRepository implements TankLoopRepository {
 }
 
 void main() {
+  debugDisableSkeletonAnimations = true;
   const simulation = AppConfig(mode: AppMode.simulation);
 
   testWidgets('captured evidence survives camera cache loss and app restart', (
@@ -216,7 +218,14 @@ void main() {
 
       await tester.pumpWidget(FieldApp(runtime: runtime));
       await tester.pumpAndSettle();
-      expect(find.text('SIMULATED DATA · No real water tests'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              w.data?.contains('SIMULATED DEMONSTRATION') == true,
+        ),
+        findsOneWidget,
+      );
       await tapVisible(tester, find.text('Start inspection'));
       expect(
         tester
@@ -279,7 +288,8 @@ void main() {
       await tester.pumpWidget(FieldApp(runtime: runtime));
       await tester.pumpAndSettle();
       await tapVisible(tester, find.byTooltip('Activity'));
-      expect(find.text('1 queued · 0 need review'), findsOneWidget);
+      expect(find.text('Queued inspections'), findsOneWidget);
+      expect(find.text('Need review'), findsOneWidget);
       await tapVisible(tester, find.text('Sync queued inspections'));
       expect(find.text('Receipt received'), findsOneWidget);
       expect(runtime.outbox.forTask(task.id)!.receipt!.clientEventId, eventId);

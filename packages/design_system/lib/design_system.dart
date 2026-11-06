@@ -2,7 +2,6 @@ library;
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 abstract final class TankColors {
   static const navy = Color(0xFF102A43);
@@ -36,6 +35,8 @@ abstract final class TankElevation {
   static const dense = 0.0;
 }
 
+const _playfair = 'PlayfairDisplay';
+
 ThemeData tankLoopTheme() {
   final scheme = ColorScheme.fromSeed(
     seedColor: TankColors.teal,
@@ -46,16 +47,19 @@ ThemeData tankLoopTheme() {
   );
   final base = ThemeData(useMaterial3: true, colorScheme: scheme);
 
-  // Display typeface: Playfair Display for headlines only
-  final displayFont = GoogleFonts.playfairDisplay(
+  // Display typeface: Playfair Display for headlines only (via Flutter font family)
+  final displayFont = TextStyle(
+    fontFamily: _playfair,
     fontWeight: FontWeight.w700,
     color: TankColors.navy,
   );
-  final displayFontMedium = GoogleFonts.playfairDisplay(
+  final displayFontMedium = TextStyle(
+    fontFamily: _playfair,
     fontWeight: FontWeight.w500,
     color: TankColors.navy,
   );
-  final displayFontLight = GoogleFonts.playfairDisplay(
+  final displayFontLight = TextStyle(
+    fontFamily: _playfair,
     fontWeight: FontWeight.w400,
     color: TankColors.navy,
   );
@@ -432,6 +436,8 @@ class FrostedSkeleton extends StatefulWidget {
   State<FrostedSkeleton> createState() => _FrostedSkeletonState();
 }
 
+bool debugDisableSkeletonAnimations = false;
+
 class _FrostedSkeletonState extends State<FrostedSkeleton>
     with SingleTickerProviderStateMixin {
   late final AnimationController controller = AnimationController(
@@ -442,7 +448,8 @@ class _FrostedSkeletonState extends State<FrostedSkeleton>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduceMotion || debugDisableSkeletonAnimations) {
       controller.stop();
     } else {
       controller.repeat();
@@ -457,8 +464,7 @@ class _FrostedSkeletonState extends State<FrostedSkeleton>
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final base = Container(
       height: widget.height,
       width: widget.width,
@@ -467,7 +473,7 @@ class _FrostedSkeletonState extends State<FrostedSkeleton>
         borderRadius: BorderRadius.circular(widget.radius),
       ),
     );
-    if (reduceMotion) return base;
+    if (reduceMotion || debugDisableSkeletonAnimations) return base;
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) => ShaderMask(
@@ -522,63 +528,119 @@ class TankBrand extends StatelessWidget {
   final bool showSimulationBadge;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: TankColors.teal,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: const Icon(
-          Icons.water_drop_rounded,
-          color: Colors.white,
-          size: 24,
-        ),
-      ),
-      const SizedBox(width: 12),
-      Flexible(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 0),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'tankloop',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -.7,
-                    color: TankColors.navy,
-                  ),
-                ),
-                Text(
-                  surface,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 2,
-                    color: TankColors.muted,
-                  ),
-                ),
-              ],
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      const iconWidth = 40.0;
+      const iconGap = 12.0;
+      const inlineBadgeGap = 8.0;
+      const stackedBadgeGap = 4.0;
+      const compactBadgeWidth = 120.0;
+
+      final hasBadge = showSimulationBadge;
+      final inlineReserved = iconWidth + iconGap + (hasBadge ? inlineBadgeGap + compactBadgeWidth : 0);
+      final inlineAvailable = constraints.maxWidth - inlineReserved;
+      final canFitInline = inlineAvailable >= 80;
+
+      final showFullBrand = constraints.maxWidth > 200;
+      final fontSize = showFullBrand ? 22.0 : 16.0;
+
+      final brandColumn = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'tankloop',
+            style: TextStyle(
+              fontFamily: _playfair,
+              fontSize: fontSize,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -.5,
+              color: TankColors.navy,
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
-        ),
-      ),
-      if (showSimulationBadge) ...[
-        const SizedBox(width: 8),
-        const SimulationBadge(compact: true),
-      ],
-    ],
+          if (showFullBrand)
+            Text(
+              surface,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2,
+                color: TankColors.muted,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+        ],
+      );
+
+      if (!hasBadge) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _icon(),
+            const SizedBox(width: iconGap),
+            Flexible(child: brandColumn),
+          ],
+        );
+      }
+
+      if (canFitInline) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _icon(),
+            const SizedBox(width: iconGap),
+            Flexible(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: inlineAvailable),
+                child: brandColumn,
+              ),
+            ),
+            const SizedBox(width: inlineBadgeGap),
+            const SimulationBadge(compact: true),
+          ],
+        );
+      }
+
+      // Stack badge below when space is tight
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _icon(),
+              const SizedBox(width: iconGap),
+              Flexible(child: brandColumn),
+            ],
+          ),
+          const SizedBox(height: stackedBadgeGap),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+            child: const SimulationBadge(compact: true),
+          ),
+        ],
+      );
+    },
   );
 }
+
+Widget _icon() => Container(
+  width: 40,
+  height: 40,
+  decoration: BoxDecoration(
+    color: TankColors.teal,
+    borderRadius: BorderRadius.circular(14),
+  ),
+  child: const Icon(
+    Icons.water_drop_rounded,
+    color: Colors.white,
+    size: 24,
+  ),
+);
 
 /// Prominent simulation badge - designed to be visible beside the brand
 class SimulationBadge extends StatelessWidget {
@@ -586,38 +648,49 @@ class SimulationBadge extends StatelessWidget {
   final bool compact;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: EdgeInsets.symmetric(
-      horizontal: compact ? 10 : 12,
-      vertical: compact ? 4 : 6,
-    ),
-    decoration: BoxDecoration(
-      color: TankColors.tealDeep.withValues(alpha: .12),
-      borderRadius: BorderRadius.circular(compact ? 16 : 20),
-      border: Border.all(
-        color: TankColors.teal.withValues(alpha: .35),
-        width: 1.5,
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 4 : 6,
       ),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.science_outlined,
-          size: compact ? 12 : 14,
-          color: TankColors.teal,
+      constraints: compact
+          ? BoxConstraints(maxWidth: constraints.maxWidth)
+          : null,
+      decoration: BoxDecoration(
+        color: TankColors.tealDeep.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(compact ? 16 : 20),
+        border: Border.all(
+          color: TankColors.teal.withValues(alpha: .35),
+          width: 1.5,
         ),
-        const SizedBox(width: 6),
-        Text(
-          'SIMULATED DEMO',
-          style: TextStyle(
-            fontSize: compact ? 10 : 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: compact ? 0.5 : 0.8,
-            color: TankColors.tealDeep,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.science_outlined,
+            size: compact ? 12 : 14,
+            color: TankColors.teal,
           ),
-        ),
-      ],
+          const SizedBox(width: 6),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'SIMULATED DEMO',
+                style: TextStyle(
+                  fontSize: compact ? 10 : 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: compact ? 0.5 : 0.8,
+                  color: TankColors.tealDeep,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -933,16 +1006,20 @@ class _MeasuredGlassCard extends StatefulWidget {
 }
 
 class _MeasuredGlassCardState extends State<_MeasuredGlassCard> {
+  bool _measured = false;
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final renderBox = context.findRenderObject() as RenderBox?;
-          if (renderBox != null && widget.onHeightMeasured != null) {
-            widget.onHeightMeasured!(renderBox.size.height);
-          }
-        });
+        if (!_measured) {
+          _measured = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final renderBox = context.findRenderObject() as RenderBox?;
+            if (renderBox != null && widget.onHeightMeasured != null) {
+              widget.onHeightMeasured!(renderBox.size.height);
+            }
+          });
+        }
         return GlassCard(
           radius: widget.radius,
           padding: widget.padding,
