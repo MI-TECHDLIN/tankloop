@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:tankloop_data/data.dart';
-import 'package:tankloop_design_system/design_system.dart'
-    hide SimulationNotice;
+import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_localization/localization.dart';
 import 'runtime.dart';
 
@@ -20,9 +18,16 @@ class ProfileScreen extends ConsumerWidget {
         runtime: runtime,
         empty: () => runtime.dashboard.actorId.isEmpty,
         child: Builder(
-          builder: (context) => Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: _content(context, runtime),
+          builder: (context) => RefreshIndicator(
+            onRefresh: () => runtime.refresh(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(TankSpace.screen),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: _content(context, runtime),
+              ),
+            ),
           ),
         ),
       ),
@@ -68,9 +73,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            runtime.config.mode == AppMode.simulation
-                ? 'Deterministic simulation · Seed ${runtime.config.seed}'
-                : 'Supabase · ${Uri.parse(runtime.config.supabaseUrl).host}',
+            'Supabase · ${Uri.parse(runtime.config.supabaseUrl).host}',
             style: const TextStyle(color: Colors.white70),
           ),
           Text(
@@ -98,24 +101,6 @@ class ProfileScreen extends ConsumerWidget {
             ),
             label: Text(runtime.online ? 'Pause sync' : 'Resume sync'),
           ),
-          if (runtime.config.mode == AppMode.simulation) ...[
-            const SizedBox(height: 16),
-            const Text(
-              'Advance the simulated clock to see new inspections, laboratory timelines and guarded case transitions.',
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: runtime.refreshing
-                  ? null
-                  : () => _perform(context, runtime.advanceDay),
-              icon: const Icon(Icons.fast_forward_outlined),
-              label: const Text('Advance 1 day'),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: TankColors.tealDeep,
-              ),
-            ),
-          ],
         ],
       ),
     ),
@@ -124,40 +109,38 @@ class ProfileScreen extends ConsumerWidget {
       prominent: true,
       title: 'Evidence, with its limits',
       message:
-          'Inspections record observed risks. They do not detect contamination. Simulated records are never real laboratory or pilot evidence.',
+          'Inspections record observed risks. They do not detect contamination.',
     ),
-    if (runtime.config.mode == AppMode.supabase) ...[
-      const SizedBox(height: 24),
-      OutlinedButton(
-        onPressed: () async {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Clear this device and sign out?'),
-              content: const Text(
-                'Local drafts and queued inspections for this account will be removed. Acknowledged server records are retained.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Keep working'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Clear and sign out'),
-                ),
-              ],
+    const SizedBox(height: 24),
+    OutlinedButton(
+      onPressed: () async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Clear this device and sign out?'),
+            content: const Text(
+              'Local drafts and queued inspections for this account will be removed. Acknowledged server records are retained.',
             ),
-          );
-          if (confirmed == true && context.mounted) {
-            await _perform(context, () async {
-              await runtime.clearDeviceData();
-              await Supabase.instance.client.auth.signOut();
-            });
-          }
-        },
-        child: const Text('Sign out and clear device'),
-      ),
-    ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Keep working'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Clear and sign out'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed == true && context.mounted) {
+          await _perform(context, () async {
+            await runtime.clearDeviceData();
+            await Supabase.instance.client.auth.signOut();
+          });
+        }
+      },
+      child: const Text('Sign out and clear device'),
+    ),
   ];
 }

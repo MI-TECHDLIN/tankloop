@@ -19,12 +19,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     final config = AppConfig.environment();
-    if (config.mode == AppMode.supabase) {
-      await Supabase.initialize(
-        url: config.supabaseUrl,
-        publishableKey: config.anonKey,
-      );
-    }
+    await Supabase.initialize(
+      url: config.supabaseUrl,
+      publishableKey: config.anonKey,
+    );
     final store = await openLocalStore();
     runApp(
       ProviderScope(
@@ -70,20 +68,18 @@ class _FieldBootstrapState extends State<FieldBootstrap> {
   @override
   void initState() {
     super.initState();
-    if (widget.config.mode == AppMode.supabase) {
-      _userId = Supabase.instance.client.auth.currentUser?.id;
-      _auth = Supabase.instance.client.auth.onAuthStateChange.listen((event) {
-        final next = event.session?.user.id;
-        if (next == _userId || !mounted) return;
-        setState(() {
-          _userId = next;
-          _runtime = next == null
-              ? null
-              : FieldRuntime.create(widget.config, widget.store);
-        });
+    _userId = Supabase.instance.client.auth.currentUser?.id;
+    _auth = Supabase.instance.client.auth.onAuthStateChange.listen((event) {
+      final next = event.session?.user.id;
+      if (next == _userId || !mounted) return;
+      setState(() {
+        _userId = next;
+        _runtime = next == null
+            ? null
+            : FieldRuntime.create(widget.config, widget.store);
       });
-    }
-    if (widget.config.mode == AppMode.simulation || _userId != null) {
+    });
+    if (_userId != null) {
       _runtime = FieldRuntime.create(widget.config, widget.store);
     }
   }
@@ -158,12 +154,10 @@ class _FieldAppState extends State<FieldApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     unawaited(widget.runtime.resume());
-    if (widget.runtime.config.mode == AppMode.supabase) {
-      syncTimer = Timer.periodic(
-        const Duration(seconds: 30),
-        (_) => unawaited(widget.runtime.sync()),
-      );
-    }
+    syncTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => unawaited(widget.runtime.sync()),
+    );
   }
 
   @override

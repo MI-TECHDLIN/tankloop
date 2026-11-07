@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:tankloop_localization/localization.dart';
@@ -209,10 +208,6 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                if (task.isSimulated) ...[
-                                  const SimulationNotice(compact: true),
-                                  const SizedBox(height: 24),
-                                ],
                                 Text(
                                   runtime.dashboard.assetFor(task).label,
                                   style: Theme.of(
@@ -265,7 +260,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                                   NoticeCard(
                                     title: entryLabel(entry),
                                     message: entry.receipt != null
-                                        ? '${runtime.config.mode == AppMode.simulation ? 'Simulation' : 'Server'} acknowledged version ${entry.receipt!.version} at ${recordTime(entry.receipt!.receivedAt)}. This inspection is an observation, not a laboratory finding.'
+                                        ? 'Server acknowledged version ${entry.receipt!.version} at ${recordTime(entry.receipt!.receivedAt)}. This inspection is an observation, not a laboratory finding.'
                                         : entry.error ??
                                               'Your inspection is saved on this device. It remains pending until a receipt is received.',
                                     icon: entry.receipt != null

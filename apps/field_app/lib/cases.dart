@@ -18,9 +18,16 @@ class CasesScreen extends ConsumerWidget {
         runtime: runtime,
         empty: () => runtime.dashboard.cases.isEmpty,
         child: Builder(
-          builder: (context) => Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: _content(context, runtime),
+          builder: (context) => RefreshIndicator(
+            onRefresh: () => runtime.refresh(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(TankSpace.screen),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: _content(context, runtime),
+              ),
+            ),
           ),
         ),
       ),

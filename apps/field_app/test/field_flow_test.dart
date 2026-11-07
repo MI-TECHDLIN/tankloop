@@ -37,7 +37,26 @@ class UnavailableRepository implements TankLoopRepository {
 
 void main() {
   debugDisableSkeletonAnimations = true;
-  const simulation = AppConfig(mode: AppMode.simulation);
+
+  final testConfig = AppConfig(
+    supabaseUrl: 'https://test.supabase.co',
+    anonKey: 'test-key',
+  );
+
+  // Shared simulation repository for tests that need persistent state
+  late final SimulationRepository sharedSimulation;
+
+  Future<FieldRuntime> createTestRuntime(MemoryKeyValueStore store) async {
+    return FieldRuntime.create(
+      testConfig,
+      store,
+      repository: sharedSimulation,
+    );
+  }
+
+  setUpAll(() {
+    sharedSimulation = SimulationRepository();
+  });
 
   testWidgets('captured evidence survives camera cache loss and app restart', (
     tester,
@@ -62,7 +81,7 @@ void main() {
       await directory.delete(recursive: true);
     });
     final store = MemoryKeyValueStore();
-    var runtime = await FieldRuntime.create(simulation, store);
+    var runtime = await createTestRuntime(store);
     await tester.pumpWidget(FieldApp(runtime: runtime));
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('Start inspection'));
@@ -90,7 +109,7 @@ void main() {
     runtime.dispose();
     photo.deleteSync();
     PaintingBinding.instance.imageCache.clear();
-    runtime = await FieldRuntime.create(simulation, store);
+    runtime = await createTestRuntime(store);
     addTearDown(runtime.dispose);
     addTearDown(runtime.outbox.dispose);
     await tester.pumpWidget(FieldApp(runtime: runtime));
@@ -112,10 +131,8 @@ void main() {
   testWidgets('manual public QR link opens assigned tasks and point history', (
     tester,
   ) async {
-    final runtime = await FieldRuntime.create(
-      simulation,
-      MemoryKeyValueStore(),
-    );
+    final store = MemoryKeyValueStore();
+    final runtime = await createTestRuntime(store);
     addTearDown(runtime.dispose);
     addTearDown(runtime.outbox.dispose);
     final task = runtime.dashboard.inspections.firstWhere(
@@ -149,7 +166,7 @@ void main() {
         ..writeAsBytesSync([1, 2, 3]);
       addTearDown(() => directory.delete(recursive: true));
       final store = MemoryKeyValueStore();
-      final runtime = await FieldRuntime.create(simulation, store);
+      final runtime = await createTestRuntime(store);
       addTearDown(runtime.dispose);
       addTearDown(runtime.outbox.dispose);
       final task = runtime.dashboard.inspections.firstWhere(
@@ -205,7 +222,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final store = MemoryKeyValueStore();
-      var runtime = await FieldRuntime.create(simulation, store);
+      var runtime = await createTestRuntime(store);
       addTearDown(() {
         runtime.outbox.dispose();
         runtime.dispose();
@@ -218,13 +235,6 @@ void main() {
 
       await tester.pumpWidget(FieldApp(runtime: runtime));
       await tester.pumpAndSettle();
-      expect(
-        find.byWidgetPredicate(
-          (w) =>
-              w is Text && w.data?.contains('SIMULATED DEMONSTRATION') == true,
-        ),
-        findsOneWidget,
-      );
       await tapVisible(tester, find.text('Start inspection'));
       expect(
         tester
@@ -247,7 +257,7 @@ void main() {
       await tester.ensureVisible(visitNotes);
       await tester.enterText(
         visitNotes,
-        'Simulated visit: tank lid needs attention.',
+        'Visit: tank lid needs attention.',
       );
       await tester.pumpAndSettle();
       await tapVisible(tester, find.text('Save draft'));
@@ -258,7 +268,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       runtime.outbox.dispose();
       runtime.dispose();
-      runtime = await FieldRuntime.create(simulation, store);
+      runtime = await createTestRuntime(store);
       await tester.pumpWidget(FieldApp(runtime: runtime));
       await tester.pumpAndSettle();
       await tapVisible(tester, find.byTooltip('Profile'));
@@ -267,7 +277,7 @@ void main() {
       await tapVisible(tester, find.text('Start inspection'));
       expect(
         tester.widget<TextField>(visitNotes).controller!.text,
-        'Simulated visit: tank lid needs attention.',
+        'Visit: tank lid needs attention.',
       );
       expect(runtime.outbox.forTask(task.id)!.command.clientEventId, eventId);
       await tapVisible(tester, find.text('Queue inspection'));
@@ -283,7 +293,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       runtime.outbox.dispose();
       runtime.dispose();
-      runtime = await FieldRuntime.create(simulation, store);
+      runtime = await createTestRuntime(store);
       await tester.pumpWidget(FieldApp(runtime: runtime));
       await tester.pumpAndSettle();
       await tapVisible(tester, find.byTooltip('Activity'));
@@ -302,11 +312,11 @@ void main() {
       await tapVisible(tester, find.text('Sync queued inspections'));
       expect(runtime.dashboard.cases.length, initialCaseCount + 1);
 
-      // The acknowledged simulation command must also survive an app restart.
+      // The acknowledged command must also survive an app restart.
       await tester.pumpWidget(const SizedBox.shrink());
       runtime.outbox.dispose();
       runtime.dispose();
-      runtime = await FieldRuntime.create(simulation, store);
+      runtime = await createTestRuntime(store);
       expect(runtime.dashboard.cases.length, initialCaseCount + 1);
       expect(
         runtime.dashboard.inspections
@@ -327,10 +337,8 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    final runtime = await FieldRuntime.create(
-      simulation,
-      MemoryKeyValueStore(),
-    );
+    final store = MemoryKeyValueStore();
+    final runtime = await createTestRuntime(store);
     addTearDown(runtime.outbox.dispose);
     addTearDown(runtime.dispose);
     await tester.pumpWidget(FieldApp(runtime: runtime));
@@ -351,8 +359,8 @@ void main() {
     'cached assignments are account-scoped and permission failures fail closed',
     () async {
       const config = AppConfig(
-        mode: AppMode.supabase,
         supabaseUrl: 'https://project.example',
+        anonKey: 'test-key',
       );
       final store = MemoryKeyValueStore();
       final first = await FieldRuntime.create(

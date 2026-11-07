@@ -51,7 +51,6 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
         runtime.workOutbox,
       ]),
       builder: (context, _) {
-        final dashboard = runtime.dashboard;
         return TankBackdrop(
           child: Scaffold(
             extendBody: true,
@@ -60,55 +59,43 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 960),
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(
-                      TankSpace.screen,
-                      TankSpace.screen + 8,
-                      TankSpace.screen,
-                      effectiveNavHeight,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TankBrand(
-                                surface: 'FIELD',
-                                showSimulationBadge:
-                                    dashboard.facility.isSimulated,
+                  child: RefreshIndicator(
+                    onRefresh: () => _perform(runtime.refresh),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        TankSpace.screen,
+                        TankSpace.screen + 8,
+                        TankSpace.screen,
+                        effectiveNavHeight,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TankBrand(
+                                  surface: 'FIELD',
+                                  showSimulationBadge: false,
+                                ),
                               ),
-                            ),
-                            IconButton.filledTonal(
-                              tooltip: 'Refresh assignments',
-                              onPressed: runtime.refreshing
-                                  ? null
-                                  : () => _perform(runtime.refresh),
-                              icon: const Icon(Icons.refresh_rounded),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton.filledTonal(
-                              tooltip: 'Scan water point QR',
-                              onPressed: () => context.push('/scan'),
-                              icon: const Icon(Icons.qr_code_scanner_rounded),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        if (dashboard.facility.isSimulated) ...[
-                          const SimulationNotice(
-                            compact: false,
-                            prominent: true,
+                              IconButton.filledTonal(
+                                tooltip: 'Scan water point QR',
+                                onPressed: () => context.push('/scan'),
+                                icon: const Icon(Icons.qr_code_scanner_rounded),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            child: _screenFor(selected),
+                          ),
                         ],
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          switchInCurve: Curves.easeOutCubic,
-                          switchOutCurve: Curves.easeInCubic,
-                          child: _screenFor(selected),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),

@@ -44,9 +44,14 @@ void main() {
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
+        final config = AppConfig(
+          supabaseUrl: 'https://test.supabase.co',
+          anonKey: 'test-key',
+        );
         final runtime = await FieldRuntime.create(
-          const AppConfig(mode: AppMode.simulation),
+          config,
           MemoryKeyValueStore(),
+          repository: SimulationRepository(),
         );
         addTearDown(runtime.outbox.dispose);
         addTearDown(runtime.dispose);

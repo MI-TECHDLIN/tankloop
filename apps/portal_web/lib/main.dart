@@ -12,12 +12,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     final config = AppConfig.environment();
-    if (config.mode == AppMode.supabase) {
-      await Supabase.initialize(
-        url: config.supabaseUrl,
-        publishableKey: config.anonKey,
-      );
-    }
+    await Supabase.initialize(
+      url: config.supabaseUrl,
+      publishableKey: config.anonKey,
+    );
     runApp(ProviderScope(child: PortalApp(config: config)));
   } catch (error) {
     runApp(
@@ -55,69 +53,37 @@ class PortalApp extends StatefulWidget {
 }
 
 class _PortalAppState extends State<PortalApp> {
-  late final SimulationRepository? simulation =
-      widget.config.mode == AppMode.simulation
-      ? SimulationRepository(seed: widget.config.seed, day: widget.config.day)
-      : null;
-  late final LabRepository labRepository = simulation == null
-      ? SupabaseLabRepository(Supabase.instance.client)
-      : SimulationLabRepository(engine: simulation!.engine);
-  late final ManagerWorkspaceRepository managerRepository = simulation == null
-      ? SupabaseManagerRepository(Supabase.instance.client)
-      : SimulationManagerRepository(engine: simulation!.engine);
+  late final LabRepository labRepository =
+      SupabaseLabRepository(Supabase.instance.client);
+  late final ManagerWorkspaceRepository managerRepository =
+      SupabaseManagerRepository(Supabase.instance.client);
   // Public scans do not inherit a staff session or an expired laboratory JWT.
-  late final SupabaseClient? publicClient = simulation == null
-      ? SupabaseClient(widget.config.supabaseUrl, widget.config.anonKey)
-      : null;
+  late final SupabaseClient publicClient =
+      SupabaseClient(widget.config.supabaseUrl, widget.config.anonKey);
   late final GoRouter router = GoRouter(
-    redirect: (_, state) => state.uri.path == '/' && simulation != null
-        ? '/point/${simulation!.engine.featuredToken}?seed=${widget.config.seed}&day=${widget.config.day}'
-        : null,
     routes: [
       GoRoute(path: '/', builder: (_, _) => const TokenEntry()),
       ...labRoutes(
         labRepository,
-        authClient: simulation == null ? Supabase.instance.client : null,
+        authClient: Supabase.instance.client,
       ),
       GoRoute(
         path: '/manager',
         builder: (_, _) => ManagerDashboard(
           repository: managerRepository,
-          authClient: simulation == null ? Supabase.instance.client : null,
+          authClient: Supabase.instance.client,
         ),
       ),
       GoRoute(
         path: '/point/:token',
         builder: (context, state) {
-          final seed =
-              int.tryParse(state.uri.queryParameters['seed'] ?? '') ??
-              widget.config.seed;
-          final day =
-              int.tryParse(state.uri.queryParameters['day'] ?? '') ??
-              widget.config.day;
-          if (day < 0 || day > 365) {
-            return const RecordUnavailable(
-              title: 'Exercise date unavailable',
-              message: 'Use a simulation day between 0 and 365.',
-            );
-          }
-          final PublicPointRepository repository = simulation == null
-              ? SupabasePublicPointRepository(publicClient!)
-              : SimulationPublicPointRepository(
-                  engine: SimulationRepository(seed: seed, day: day).engine,
-                );
+          final PublicPointRepository repository =
+              SupabasePublicPointRepository(publicClient);
           return PublicPointPage(
-            key: ValueKey('${state.pathParameters['token']}:$seed:$day'),
+            key: ValueKey(state.pathParameters['token']!),
             repository: repository,
             token: state.pathParameters['token']!,
-            simulatedDay: simulation == null ? null : day,
-            seed: simulation == null ? null : seed,
             initialTextFirst: state.uri.queryParameters['view'] == 'text',
-            onAdvance: simulation == null || day == 365
-                ? null
-                : () => context.go(
-                    '/point/${state.pathParameters['token']}?seed=$seed&day=${day + 1}',
-                  ),
           );
         },
       ),
@@ -130,7 +96,7 @@ class _PortalAppState extends State<PortalApp> {
   @override
   void dispose() {
     router.dispose();
-    publicClient?.dispose();
+    publicClient.dispose();
     super.dispose();
   }
 
