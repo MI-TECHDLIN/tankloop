@@ -53,20 +53,20 @@ class PortalApp extends StatefulWidget {
 }
 
 class _PortalAppState extends State<PortalApp> {
-  late final LabRepository labRepository =
-      SupabaseLabRepository(Supabase.instance.client);
+  late final LabRepository labRepository = SupabaseLabRepository(
+    Supabase.instance.client,
+  );
   late final ManagerWorkspaceRepository managerRepository =
       SupabaseManagerRepository(Supabase.instance.client);
   // Public scans do not inherit a staff session or an expired laboratory JWT.
-  late final SupabaseClient publicClient =
-      SupabaseClient(widget.config.supabaseUrl, widget.config.anonKey);
+  late final SupabaseClient publicClient = SupabaseClient(
+    widget.config.supabaseUrl,
+    widget.config.anonKey,
+  );
   late final GoRouter router = GoRouter(
     routes: [
       GoRoute(path: '/', builder: (_, _) => const TokenEntry()),
-      ...labRoutes(
-        labRepository,
-        authClient: Supabase.instance.client,
-      ),
+      ...labRoutes(labRepository, authClient: Supabase.instance.client),
       GoRoute(
         path: '/manager',
         builder: (_, _) => ManagerDashboard(

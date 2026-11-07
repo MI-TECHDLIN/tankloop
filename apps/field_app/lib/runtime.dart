@@ -47,8 +47,7 @@ class FieldRuntime extends ChangeNotifier {
     String? userId,
   }) async {
     final repo =
-        repository ??
-        SupabaseTankLoopRepository(Supabase.instance.client);
+        repository ?? SupabaseTankLoopRepository(Supabase.instance.client);
     final identity = repository != null
         ? '${config.supabaseUrl}:${userId ?? 'test-user'}'
         : '${config.supabaseUrl}:${userId ?? Supabase.instance.client.auth.currentUser!.id}';

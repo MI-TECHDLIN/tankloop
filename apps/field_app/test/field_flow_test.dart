@@ -47,11 +47,7 @@ void main() {
   late final SimulationRepository sharedSimulation;
 
   Future<FieldRuntime> createTestRuntime(MemoryKeyValueStore store) async {
-    return FieldRuntime.create(
-      testConfig,
-      store,
-      repository: sharedSimulation,
-    );
+    return FieldRuntime.create(testConfig, store, repository: sharedSimulation);
   }
 
   setUpAll(() {
@@ -255,10 +251,7 @@ void main() {
         );
       }
       await tester.ensureVisible(visitNotes);
-      await tester.enterText(
-        visitNotes,
-        'Visit: tank lid needs attention.',
-      );
+      await tester.enterText(visitNotes, 'Visit: tank lid needs attention.');
       await tester.pumpAndSettle();
       await tapVisible(tester, find.text('Save draft'));
       final eventId = runtime.outbox.forTask(task.id)!.command.clientEventId;

@@ -213,7 +213,8 @@ class _WorkOrderScreenState extends ConsumerState<WorkOrderScreen> {
                               ),
                             ),
                           ],
-                          if (draft != null && draft.state == DraftState.pending)
+                          if (draft != null &&
+                              draft.state == DraftState.pending)
                             TextButton(
                               onPressed: busy
                                   ? null
