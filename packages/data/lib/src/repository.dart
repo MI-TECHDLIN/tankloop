@@ -518,6 +518,7 @@ class SupabaseTankLoopRepository extends ManagerRepository
       final facilities = await client
           .from('facilities')
           .select('*,organizations(settings)')
+          .eq('is_simulated', false)
           .order('id')
           .limit(1);
       if (facilities.isEmpty) {
@@ -538,28 +539,41 @@ class SupabaseTankLoopRepository extends ManagerRepository
             .from('assets')
             .select()
             .eq('facility_id', id)
+            .eq('is_simulated', false)
             .isFilter('retired_at', null),
-        client.from('sampling_points').select().eq('facility_id', id),
-        client.from('checklist_templates').select().eq('facility_id', id),
+        client
+            .from('sampling_points')
+            .select()
+            .eq('facility_id', id)
+            .eq('is_simulated', false),
+        client
+            .from('checklist_templates')
+            .select()
+            .eq('facility_id', id)
+            .eq('is_simulated', false),
         client
             .from('inspections')
             .select()
             .eq('facility_id', id)
+            .eq('is_simulated', false)
             .order('due_at'),
         client
             .from('incidents')
             .select()
             .eq('facility_id', id)
+            .eq('is_simulated', false)
             .order('reported_at', ascending: false),
         client
             .from('public_records')
             .select('point_id,token')
             .eq('facility_id', id)
+            .eq('is_simulated', false)
             .isFilter('revoked_at', null),
         client
             .from('work_orders')
             .select()
             .eq('facility_id', id)
+            .eq('is_simulated', false)
             .eq('assignee_id', client.auth.currentUser!.id),
       ]);
       return DashboardSnapshot.fromJson({
