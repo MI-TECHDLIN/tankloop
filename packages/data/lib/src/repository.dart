@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'field_work.dart';
 import 'dart:typed_data';
@@ -238,210 +237,12 @@ abstract class ManagerRepository extends TankLoopRepository {
   });
 }
 
-class SimulationRepository extends ManagerRepository
-    implements FieldWorkRepository {
-  SimulationRepository({int seed = 20261101, int day = 10})
-    : engine = SimulationEngine(seed: seed)..advance(Duration(days: day));
-  final SimulationEngine engine;
-  final _workReceipts = <String, WorkStepReceipt>{};
-  final _workRequests = <String, String>{};
-  @override
-  Future<WorkStepReceipt> submitWorkStep(WorkStepCommand command) async {
-    final prior = _workReceipts[command.clientEventId];
-    final content = jsonEncode(command.toJson());
-    if (prior != null) {
-      requireRule(
-        _workRequests[command.clientEventId] == content,
-        'event_conflict',
-        'Command content changed.',
-      );
-      return prior;
-    }
-    final order = engine.workOrders[command.orderId];
-    requireRule(
-      order != null &&
-          order.version == command.expectedVersion &&
-          order.scope.matches(command.scope),
-      'version_conflict',
-      'Refresh this work order before recording another step.',
-    );
-    final next = order!.transition(
-      command.target,
-      CommandContext(
-        actor: engine.actorFor(order.scope, Role.field),
-        at: engine.now,
-        eventId: command.clientEventId,
-        serverConfirmed: true,
-        reason: command.notes.isEmpty
-            ? 'Simulated field action'
-            : command.notes,
-      ),
-      evidence: command.notes.isEmpty ? null : command.notes,
-      evidenceFiles: command.evidence,
-    );
-    engine.workOrders[order.id] = next;
-    final receipt = WorkStepReceipt(
-      clientEventId: command.clientEventId,
-      orderId: order.id,
-      version: next.version,
-      receivedAt: engine.now,
-    );
-    _workRequests[command.clientEventId] = content;
-    _workReceipts[command.clientEventId] = receipt;
-    return receipt;
-  }
-
-  @override
-  Future<DashboardSnapshot> today() async {
-    final facility = engine.facilities.first;
-    final tasks =
-        engine.inspections.values
-            .where((t) => t.scope.matches(facility.scope))
-            .toList()
-          ..sort((a, b) => a.dueAt.compareTo(b.dueAt));
-    return DashboardSnapshot(
-      facility: facility,
-      actorId: engine.actorFor(facility.scope, Role.field).id,
-      asOf: engine.now,
-      assets: engine.assets
-          .where((a) => a.scope.matches(facility.scope))
-          .toList(),
-      points: engine.points
-          .where((p) => p.scope.matches(facility.scope))
-          .toList(),
-      templates: engine.templates
-          .where((t) => t.scope.matches(facility.scope))
-          .toList(),
-      inspections: tasks,
-      cases: engine.incidents.values
-          .where((i) => i.scope.matches(facility.scope))
-          .map(
-            (i) => CaseSummary(
-              id: i.id,
-              source: i.source,
-              state: i.state,
-              pointLabel: engine.points
-                  .singleWhere((p) => p.id == i.pointIds.first)
-                  .label,
-              reportedAt: i.reportedAt,
-              dueAt: i.dueAt,
-              hasOwner: i.ownerId != null,
-              isSimulated: true,
-              events: i.history
-                  .map((e) => '${isoDate(e.at)} · ${e.to.replaceAll('_', ' ')}')
-                  .toList(),
-            ),
-          )
-          .toList(),
-      workOrders: engine.workOrders.values
-          .where((w) => w.scope.matches(facility.scope))
-          .map(
-            (w) =>
-                FieldWorkOrder.fromJson(Map<String, dynamic>.from(w.toJson())),
-          )
-          .toList(),
-      publicTokens: {
-        for (final q in engine.qrs.where(
-          (q) => q.scope.matches(facility.scope),
-        ))
-          q.pointId: q.token,
-      },
-    );
-  }
-
-  @override
-  Future<SyncReceipt> submitInspection(InspectionSubmission command) async {
-    try {
-      final version = engine.submitInspection(command);
-      return SyncReceipt(
-        clientEventId: command.clientEventId,
-        inspectionId: command.taskId,
-        version: version,
-        receivedAt: engine.inspections[command.taskId]!.submittedAt!,
-      );
-    } on RuleViolation catch (error) {
-      throw RepositoryFailure(
-        error.code.contains('conflict')
-            ? FailureKind.conflict
-            : error.code == 'permission_denied'
-            ? FailureKind.permission
-            : FailureKind.invalid,
-        error.message,
-      );
-    }
-  }
-
-  @override
-  Future<PublicWaterRecord?> publicRecord(String token) async =>
-      engine.publicRecord(token);
-
-  @override
-  Future<int> transitionIncident({
-    required String id,
-    required IncidentState target,
-    required int expectedVersion,
-    Map<String, Object?> payload = const {},
-    required String reason,
-  }) async {
-    final incident = engine.incidents[id];
-    if (incident == null || incident.version != expectedVersion) {
-      throw const RepositoryFailure(
-        FailureKind.conflict,
-        'This incident changed on the server. Refresh before acting.',
-      );
-    }
-    engine.managerAdvanceIncident(id, target);
-    return engine.incidents[id]!.version;
-  }
-
-  @override
-  Future<int> transitionWorkOrder({
-    required String id,
-    required WorkOrderState target,
-    required int expectedVersion,
-    Map<String, Object?> payload = const {},
-    required String reason,
-  }) async {
-    final order = engine.workOrders[id];
-    if (order == null || order.version != expectedVersion) {
-      throw const RepositoryFailure(
-        FailureKind.conflict,
-        'This work order changed on the server. Refresh before acting.',
-      );
-    }
-    engine.managerAdvanceWorkOrder(id, target);
-    return engine.workOrders[id]!.version;
-  }
-
-  @override
-  Future<int> escalateIncident({
-    required String id,
-    required int expectedVersion,
-    required String reason,
-  }) async {
-    final incident = engine.incidents[id];
-    if (incident == null || incident.version != expectedVersion) {
-      throw const RepositoryFailure(
-        FailureKind.conflict,
-        'This incident changed on the server. Refresh before acting.',
-      );
-    }
-    engine.incidents[id] = incident.escalate(
-      CommandContext(
-        actor: engine.actorFor(incident.scope, Role.manager),
-        at: engine.now,
-        eventId: 'simulation-escalation-${incident.id}-${incident.version}',
-        serverConfirmed: true,
-        reason: 'Simulated: $reason',
-      ),
-    );
-    return engine.incidents[id]!.version;
-  }
-}
-
 class SupabaseTankLoopRepository extends ManagerRepository
     implements EvidenceUploader, FieldWorkRepository {
-  const SupabaseTankLoopRepository(this.client);
+  const SupabaseTankLoopRepository(this.client, {this.includeSimulated = true});
+
+  /// Portal exercises retain their provenance. Field excludes generated records.
+  final bool includeSimulated;
   final SupabaseClient client;
   @override
   Future<WorkStepReceipt> submitWorkStep(WorkStepCommand command) async {
@@ -518,7 +319,6 @@ class SupabaseTankLoopRepository extends ManagerRepository
       final facilities = await client
           .from('facilities')
           .select('*,organizations(settings)')
-          .eq('is_simulated', false)
           .order('id')
           .limit(1);
       if (facilities.isEmpty) {
@@ -531,50 +331,22 @@ class SupabaseTankLoopRepository extends ManagerRepository
       final id = facility['id'] as String;
       final organization = facility['organizations'] as Map<String, dynamic>;
       final settings = organization['settings'] as Map<String, dynamic>;
-      final simulatedAt = facility['is_simulated'] == true
+      final simulatedAt = includeSimulated && facility['is_simulated'] == true
           ? settings['simulation_clock'] as String?
           : null;
+      PostgrestFilterBuilder<List<Map<String, dynamic>>> records(String table) {
+        final query = client.from(table).select().eq('facility_id', id);
+        return includeSimulated ? query : query.eq('is_simulated', false);
+      }
+
       final rows = await Future.wait([
-        client
-            .from('assets')
-            .select()
-            .eq('facility_id', id)
-            .eq('is_simulated', false)
-            .isFilter('retired_at', null),
-        client
-            .from('sampling_points')
-            .select()
-            .eq('facility_id', id)
-            .eq('is_simulated', false),
-        client
-            .from('checklist_templates')
-            .select()
-            .eq('facility_id', id)
-            .eq('is_simulated', false),
-        client
-            .from('inspections')
-            .select()
-            .eq('facility_id', id)
-            .eq('is_simulated', false)
-            .order('due_at'),
-        client
-            .from('incidents')
-            .select()
-            .eq('facility_id', id)
-            .eq('is_simulated', false)
-            .order('reported_at', ascending: false),
-        client
-            .from('public_records')
-            .select('point_id,token')
-            .eq('facility_id', id)
-            .eq('is_simulated', false)
-            .isFilter('revoked_at', null),
-        client
-            .from('work_orders')
-            .select()
-            .eq('facility_id', id)
-            .eq('is_simulated', false)
-            .eq('assignee_id', client.auth.currentUser!.id),
+        records('assets').isFilter('retired_at', null),
+        records('sampling_points'),
+        records('checklist_templates'),
+        records('inspections').order('due_at'),
+        records('incidents').order('reported_at', ascending: false),
+        records('public_records').isFilter('revoked_at', null),
+        records('work_orders').eq('assignee_id', client.auth.currentUser!.id),
       ]);
       return DashboardSnapshot.fromJson({
         'facility': facility,

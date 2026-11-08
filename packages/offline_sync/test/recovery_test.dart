@@ -1,3 +1,4 @@
+import '../../data/test/support/fixture_repository.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:drift/native.dart';
@@ -68,7 +69,7 @@ void main() {
       final database = PowerLossStore(
         SqliteKeyValueStore(NativeDatabase(file)),
       );
-      final repository = SimulationRepository();
+      final repository = FixtureRepository();
       final data = await repository.today();
       final task = data.inspections.firstWhere((t) => !t.isSubmitted);
       final template = data.templateFor(task);
@@ -133,7 +134,7 @@ void main() {
   test(
     'airplane mode never invokes network; double tap preserves one command',
     () async {
-      final repo = SimulationRepository();
+      final repo = FixtureRepository();
       final data = await repo.today();
       final outbox = InspectionOutbox(
         store: MemoryKeyValueStore(),
@@ -171,7 +172,7 @@ void main() {
   test(
     'revoked QR never opens even when the downloaded point still has its old token',
     () async {
-      final repo = SimulationRepository();
+      final repo = FixtureRepository();
       final data = await repo.today();
       final token = data.publicTokens.values.first;
       final original = repo.engine.qrs.firstWhere((q) => q.token == token);
@@ -221,7 +222,7 @@ void main() {
   test(
     'work steps survive Drift restart and get one receipt after retry',
     () async {
-      final repo = SimulationRepository();
+      final repo = FixtureRepository();
       final data = await repo.today();
       final actor = repo.engine.actorFor(data.scope, Role.field);
       final manager = repo.engine.actorFor(data.scope, Role.manager);

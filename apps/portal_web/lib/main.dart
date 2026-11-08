@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
+import 'config.dart';
+import 'package:tankloop_domain/domain.dart';
 import 'lab/lab_routes.dart';
 import 'manager_dashboard.dart';
 import 'public_point.dart';
@@ -11,11 +13,13 @@ import 'public_point.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    final config = AppConfig.environment();
-    await Supabase.initialize(
-      url: config.supabaseUrl,
-      publishableKey: config.anonKey,
-    );
+    final config = PortalConfig.environment();
+    if (config.mode == PortalMode.supabase) {
+      await Supabase.initialize(
+        url: config.supabaseUrl,
+        publishableKey: config.anonKey,
+      );
+    }
     runApp(ProviderScope(child: PortalApp(config: config)));
   } catch (error) {
     runApp(
@@ -41,49 +45,83 @@ Future<void> main() async {
   }
 }
 
-final portalConfigProvider = Provider<AppConfig>(
+final portalConfigProvider = Provider<PortalConfig>(
   (ref) => throw StateError('Portal is not initialized.'),
 );
 
 class PortalApp extends StatefulWidget {
   const PortalApp({super.key, required this.config});
-  final AppConfig config;
+  final PortalConfig config;
   @override
   State<PortalApp> createState() => _PortalAppState();
 }
 
 class _PortalAppState extends State<PortalApp> {
-  late final LabRepository labRepository = SupabaseLabRepository(
-    Supabase.instance.client,
-  );
-  late final ManagerWorkspaceRepository managerRepository =
-      SupabaseManagerRepository(Supabase.instance.client);
+  late final SimulationEngine? simulation =
+      widget.config.mode == PortalMode.simulation
+      ? (SimulationEngine(seed: widget.config.seed)
+          ..advance(Duration(days: widget.config.day)))
+      : null;
+  late final LabRepository labRepository = simulation == null
+      ? SupabaseLabRepository(Supabase.instance.client)
+      : SimulationLabRepository(engine: simulation!);
+  late final ManagerWorkspaceRepository managerRepository = simulation == null
+      ? SupabaseManagerRepository(Supabase.instance.client)
+      : SimulationManagerRepository(engine: simulation!);
   // Public scans do not inherit a staff session or an expired laboratory JWT.
-  late final SupabaseClient publicClient = SupabaseClient(
-    widget.config.supabaseUrl,
-    widget.config.anonKey,
-  );
+  late final SupabaseClient? publicClient = simulation == null
+      ? SupabaseClient(widget.config.supabaseUrl, widget.config.anonKey)
+      : null;
   late final GoRouter router = GoRouter(
+    redirect: (_, state) => state.uri.path == '/' && simulation != null
+        ? '/point/${simulation!.featuredToken}?seed=${widget.config.seed}&day=${widget.config.day}'
+        : null,
     routes: [
       GoRoute(path: '/', builder: (_, _) => const TokenEntry()),
-      ...labRoutes(labRepository, authClient: Supabase.instance.client),
+      ...labRoutes(
+        labRepository,
+        authClient: simulation == null ? Supabase.instance.client : null,
+      ),
       GoRoute(
         path: '/manager',
         builder: (_, _) => ManagerDashboard(
           repository: managerRepository,
-          authClient: Supabase.instance.client,
+          authClient: simulation == null ? Supabase.instance.client : null,
         ),
       ),
       GoRoute(
         path: '/point/:token',
         builder: (context, state) {
-          final PublicPointRepository repository =
-              SupabasePublicPointRepository(publicClient);
+          final seed =
+              int.tryParse(state.uri.queryParameters['seed'] ?? '') ??
+              widget.config.seed;
+          final day =
+              int.tryParse(state.uri.queryParameters['day'] ?? '') ??
+              widget.config.day;
+          if (day < 0 || day > 365) {
+            return const RecordUnavailable(
+              title: 'Exercise date unavailable',
+              message: 'Use a simulation day between 0 and 365.',
+            );
+          }
+          final PublicPointRepository repository = simulation == null
+              ? SupabasePublicPointRepository(publicClient!)
+              : SimulationPublicPointRepository(
+                  engine: (SimulationEngine(seed: seed)
+                    ..advance(Duration(days: day))),
+                );
           return PublicPointPage(
-            key: ValueKey(state.pathParameters['token']!),
+            key: ValueKey('${state.pathParameters['token']}:$seed:$day'),
             repository: repository,
             token: state.pathParameters['token']!,
+            simulatedDay: simulation == null ? null : day,
+            seed: simulation == null ? null : seed,
             initialTextFirst: state.uri.queryParameters['view'] == 'text',
+            onAdvance: simulation == null || day == 365
+                ? null
+                : () => context.go(
+                    '/point/${state.pathParameters['token']}?seed=$seed&day=${day + 1}',
+                  ),
           );
         },
       ),
@@ -96,7 +134,7 @@ class _PortalAppState extends State<PortalApp> {
   @override
   void dispose() {
     router.dispose();
-    publicClient.dispose();
+    publicClient?.dispose();
     super.dispose();
   }
 

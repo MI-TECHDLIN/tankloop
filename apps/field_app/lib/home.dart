@@ -59,42 +59,46 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 960),
-                  child: RefreshIndicator(
-                    onRefresh: () => _perform(runtime.refresh),
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.fromLTRB(
-                        TankSpace.screen,
-                        TankSpace.screen + 8,
-                        TankSpace.screen,
-                        effectiveNavHeight,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TankBrand(
-                                  surface: 'FIELD',
-                                  showSimulationBadge: false,
+                  child: SizedBox.expand(
+                    child: RefreshIndicator(
+                      onRefresh: () => _perform(runtime.refresh),
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.fromLTRB(
+                          TankSpace.screen,
+                          TankSpace.screen + 8,
+                          TankSpace.screen,
+                          effectiveNavHeight,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TankBrand(
+                                    surface: 'FIELD',
+                                    showSimulationBadge: false,
+                                  ),
                                 ),
-                              ),
-                              IconButton.filledTonal(
-                                tooltip: 'Scan water point QR',
-                                onPressed: () => context.push('/scan'),
-                                icon: const Icon(Icons.qr_code_scanner_rounded),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            switchInCurve: Curves.easeOutCubic,
-                            switchOutCurve: Curves.easeInCubic,
-                            child: _screenFor(selected),
-                          ),
-                        ],
+                                IconButton.filledTonal(
+                                  tooltip: 'Scan water point QR',
+                                  onPressed: () => context.push('/scan'),
+                                  icon: const Icon(
+                                    Icons.qr_code_scanner_rounded,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              child: _screenFor(selected),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

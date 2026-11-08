@@ -1,3 +1,4 @@
+import '../../../packages/data/test/support/fixture_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,7 +30,7 @@ void main() {
     'work',
   ]) {
     for (final state in [
-      'loading',
+      'refreshing',
       'empty',
       'error',
       'permission-denied',
@@ -51,7 +52,7 @@ void main() {
         final runtime = await FieldRuntime.create(
           config,
           MemoryKeyValueStore(),
-          repository: SimulationRepository(),
+          repository: FixtureRepository(liveRecords: true),
         );
         addTearDown(runtime.outbox.dispose);
         addTearDown(runtime.dispose);
@@ -92,7 +93,7 @@ void main() {
           );
         }
         runtime.dashboard = DashboardSnapshot.fromJson(data);
-        runtime.refreshing = state == 'loading';
+        runtime.refreshing = state == 'refreshing';
         runtime.error = state == 'error'
             ? 'Test connection failed. Saved content is retained.'
             : null;
@@ -134,9 +135,12 @@ void main() {
           ),
         );
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.byKey(ValueKey(state)), findsOneWidget);
-        if (state == 'loading') {
-          expect(find.byType(FrostedSkeleton), findsWidgets);
+        expect(
+          find.byKey(ValueKey(state == 'refreshing' ? 'success' : state)),
+          findsOneWidget,
+        );
+        if (state == 'refreshing') {
+          expect(find.byType(FrostedSkeleton), findsNothing);
         }
         if (state == 'permission-denied') {
           expect(find.byType(TextField), findsNothing);

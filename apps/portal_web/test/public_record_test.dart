@@ -1,3 +1,4 @@
+import 'package:tankloop_portal/config.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_domain/domain.dart';
+import 'package:tankloop_portal/main.dart';
 import 'package:tankloop_portal/public/public_record_skeleton.dart';
 import 'public/public_test_support.dart';
 
@@ -287,4 +289,26 @@ void main() {
     expect(find.text('Unverified records are awaiting review'), findsOneWidget);
     expect(find.text(PublicWaterRecord.limitation), findsOneWidget);
   });
+
+  testWidgets(
+    'simulation root selects a generated token and advances its dated route',
+    (tester) async {
+      await tester.pumpWidget(
+        const PortalApp(config: PortalConfig(mode: PortalMode.simulation)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Seed 20261101 · Day 10 · Deterministic, generated timeline'),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(find.text('Advance 1 day'));
+      await tester.tap(find.text('Advance 1 day'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Seed 20261101 · Day 11 · Deterministic, generated timeline'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

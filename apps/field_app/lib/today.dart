@@ -81,7 +81,7 @@ class TodayScreen extends ConsumerWidget {
       ),
       const SizedBox(height: 8),
       Text(
-        'Inspections, lab reviews, and fixes — each dated and accountable.',
+        'Inspections, lab reviews, and fixes - each dated and accountable.',
         style: Theme.of(
           context,
         ).textTheme.bodyLarge?.copyWith(color: TankColors.muted),

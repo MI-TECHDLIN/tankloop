@@ -57,9 +57,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
         answers: answers,
         notes: notes.text,
         evidence: evidence,
-        observedAt: task.isSimulated
-            ? runtime.dashboard.asOf
-            : DateTime.now().toUtc(),
+        observedAt: DateTime.now().toUtc(),
       );
       return true;
     } catch (_) {

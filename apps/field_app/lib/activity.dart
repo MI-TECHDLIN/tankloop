@@ -25,18 +25,9 @@ class ActivityScreen extends ConsumerWidget {
         empty: () =>
             runtime.outbox.entries.isEmpty &&
             !runtime.dashboard.inspections.any((t) => t.isSubmitted),
-        child: Builder(
-          builder: (context) => RefreshIndicator(
-            onRefresh: () => runtime.refresh(),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(TankSpace.screen),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: _content(context, runtime),
-              ),
-            ),
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: _content(context, runtime),
         ),
       ),
     );

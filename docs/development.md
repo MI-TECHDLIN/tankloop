@@ -26,10 +26,10 @@ Use port `8081` for Portal (Verify, Manage and Lab). Available defines:
 
 | Define | Default / purpose |
 | --- | --- |
-| `TANKLOOP_MODE` | `simulation` or `supabase`; invalid values fail at startup |
-| `SIMULATION_SEED` | `20261101` |
-| `SIMULATION_DAY` | `10`, allowed range `0..365` |
-| `SUPABASE_URL` | Required in Supabase mode |
+| `TANKLOOP_MODE` | `supabase` only in Field (the default); Portal retains `simulation` or `supabase` |
+| `SIMULATION_SEED` | Portal only: `20261101` |
+| `SIMULATION_DAY` | Portal only: `10`, allowed range `0..365` |
+| `SUPABASE_URL` | Always required by Field; required in Portal Supabase mode |
 | `SUPABASE_ANON_KEY` | Client-safe publishable or legacy anon key only |
 | `PORTAL_BASE_URL` | `http://localhost:8081`; used by copied public point links |
 
@@ -46,7 +46,7 @@ supabase test db
 
 Startup applies the repository migrations and generated seed. `supabase status` shows the local API URL and client-safe key for `.env`. Set `TANKLOOP_MODE=supabase`, then rebuild both apps with that file. The anonymous Portal and authenticated Manage/Lab use the same URL/key as Field.
 
-`supabase db reset` reapplies migrations and seed to a **fresh local database**, replacing local records and Auth users. Use it when intentionally resetting the exercise. The seeded database has a fixed simulated clock; Field and Verify both use that clock for simulated records. Membership expiry uses actual server time.
+`supabase db reset` reapplies migrations and seed to a **fresh local database**, replacing local records and Auth users. Use it when intentionally resetting the exercise. The seeded database has a fixed simulated clock used by Portal exercise records. Field uses the current clock and excludes synthetic records, even when membership belongs to a seeded facility. Membership expiry uses actual server time.
 
 ### Create a usable Field account
 
@@ -61,11 +61,11 @@ order by id
 limit 1;
 ```
 
-Sign in to Field with that account. This slice loads the first authorized facility by ID; a multi-facility switcher is deferred. Seeded inspections are available to the facility team. A specifically assigned inspection is also checked against its assigned inspector by the server.
+Sign in to Field with that account. This slice loads the first authorized facility by ID; a multi-facility switcher is deferred. The seed contains no real observations, so Field shows empty assignment and history states until non-synthetic records exist. Do not relabel seed rows to populate Field. A specifically assigned inspection is also checked against its assigned inspector by the server.
 
 Use **Water > Copy public QR link** to open the exact point in Verify. A `Yes` risk answer creates an inspection-sourced concern when the command is accepted. Refresh that public point to see it. A concern does not create a laboratory result.
 
-On an Android emulator, use `http://10.0.2.2:54321` for the local API and a reachable Portal URL. The debug build allows local development traffic. Hosted builds should use HTTPS.
+On an Android emulator, use `http://10.0.2.2:54321` for the local API and a reachable Portal URL. The Android app allows local development traffic. Hosted builds should use HTTPS.
 
 ### Public Verify and printable QR stickers
 
@@ -112,7 +112,7 @@ export TANKLOOP_TEST_LAB_PASSWORD='<YOUR_LOCAL_REVIEWER_PASSWORD>'
 (cd packages/data && dart test --reporter expanded)
 ```
 
-The Field fixture needs the membership above and an unsubmitted inspection. Each successful Field run consumes one scheduled inspection; reset the disposable database or choose another fixture when exhausted. The Lab account needs an active `lab` membership in the same facility and creates fresh samples per run. CI creates separate accounts and a fresh database for every run. Each integration test is explicitly skipped when its required environment is absent.
+The Field fixture needs the membership above and an unsubmitted inspection. The SDK integration explicitly retains labeled synthetic fixtures and also checks that the production Field projection is empty. Each successful SDK run consumes one scheduled inspection; reset the disposable database or choose another fixture when exhausted. The Lab account needs an active `lab` membership in the same facility and creates fresh samples per run. CI creates separate accounts and a fresh database for every run. Each integration test is explicitly skipped when its required environment is absent.
 
 ## Checks and builds
 

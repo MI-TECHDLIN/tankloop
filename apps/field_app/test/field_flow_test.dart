@@ -1,3 +1,4 @@
+import '../../../packages/data/test/support/fixture_repository.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
@@ -43,15 +44,15 @@ void main() {
     anonKey: 'test-key',
   );
 
-  // Shared simulation repository for tests that need persistent state
-  late final SimulationRepository sharedSimulation;
+  // Shared fixture for tests that need persistent state
+  late final FixtureRepository sharedFixture;
 
   Future<FieldRuntime> createTestRuntime(MemoryKeyValueStore store) async {
-    return FieldRuntime.create(testConfig, store, repository: sharedSimulation);
+    return FieldRuntime.create(testConfig, store, repository: sharedFixture);
   }
 
   setUpAll(() {
-    sharedSimulation = SimulationRepository();
+    sharedFixture = FixtureRepository(liveRecords: true);
   });
 
   testWidgets('captured evidence survives camera cache loss and app restart', (
@@ -359,7 +360,7 @@ void main() {
       final first = await FieldRuntime.create(
         config,
         store,
-        repository: SimulationRepository(),
+        repository: FixtureRepository(liveRecords: true),
         userId: 'account-a',
       );
       addTearDown(first.outbox.dispose);

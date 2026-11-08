@@ -17,18 +17,9 @@ class ProfileScreen extends ConsumerWidget {
       builder: (context, _) => FieldContent(
         runtime: runtime,
         empty: () => runtime.dashboard.actorId.isEmpty,
-        child: Builder(
-          builder: (context) => RefreshIndicator(
-            onRefresh: () => runtime.refresh(),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(TankSpace.screen),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: _content(context, runtime),
-              ),
-            ),
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: _content(context, runtime),
         ),
       ),
     );
@@ -77,19 +68,19 @@ class ProfileScreen extends ConsumerWidget {
             style: const TextStyle(color: Colors.white70),
           ),
           Text(
-            'Record clock: ${recordTime(runtime.dashboard.asOf)}',
+            'Last updated: ${recordTime(runtime.dashboard.asOf)}',
             style: const TextStyle(color: Colors.white70),
           ),
         ],
       ),
     ),
-    const SectionHeading('Offline exercise'),
+    const SectionHeading('Sync preferences'),
     GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Pause sync, save a check, reload the app, then resume sync. Drafts and queued commands are durable.',
+            'Pause uploads when needed. Drafts and queued work stay on this device until you resume sync.',
           ),
           const SizedBox(height: 16),
           OutlinedButton.icon(

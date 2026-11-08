@@ -9,6 +9,15 @@ class AppConfig {
   final String portalBaseUrl;
 
   factory AppConfig.environment() {
+    const mode = String.fromEnvironment(
+      'TANKLOOP_MODE',
+      defaultValue: 'supabase',
+    );
+    if (mode != 'supabase') {
+      throw const FormatException(
+        'TankLoop Field requires TANKLOOP_MODE=supabase.',
+      );
+    }
     final config = AppConfig(
       supabaseUrl: const String.fromEnvironment('SUPABASE_URL'),
       anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
