@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:tankloop_offline_sync/offline_sync.dart';
 
@@ -40,7 +41,7 @@ class _EvidencePhotoState extends State<EvidencePhoto> {
         cacheWidth: 232,
         fit: BoxFit.cover,
         semanticLabel: 'Saved inspection photo',
-        errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
+        errorBuilder: (_, _, _) => const Icon(Symbols.broken_image_rounded),
       );
     },
   );

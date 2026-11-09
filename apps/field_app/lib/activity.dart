@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_localization/localization.dart';
 import 'package:tankloop_offline_sync/offline_sync.dart';
 import 'runtime.dart';
 
 import 'field_content.dart';
+import 'plain_language.dart';
 import 'sync_status.dart';
 
 class ActivityScreen extends ConsumerWidget {
@@ -22,9 +24,26 @@ class ActivityScreen extends ConsumerWidget {
       ]),
       builder: (context, _) => FieldContent(
         runtime: runtime,
+        header: const PageHeader(
+          eyebrow: 'Activity',
+          eyebrowIcon: TankMeta.device,
+          lead: 'Sync & ',
+          emphasis: 'history.',
+        ),
         empty: () =>
             runtime.outbox.entries.isEmpty &&
             !runtime.dashboard.inspections.any((t) => t.isSubmitted),
+        emptyState: const EmptyStateCard(
+          art: LayeredRecordArt(
+            accent: TankAccents.receipt,
+            label: 'NO ACTIVITY YET',
+            height: 150,
+          ),
+          title: 'No device activity yet',
+          message:
+              'Save an inspection to see its draft, queue and receipt here. Nothing leaves this phone until you send it.',
+          child: FlowSteps(steps: inspectionSteps),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: _content(context, runtime),
@@ -52,151 +71,216 @@ class ActivityScreen extends ConsumerWidget {
     }
   }
 
-  List<Widget> _content(BuildContext context, FieldRuntime runtime) => [
-    Text(
-      'Nothing lost\nbetween connections.',
-      style: Theme.of(context).textTheme.displayMedium,
-    ),
-    const SizedBox(height: 16),
-    // Status summary cards
-    Row(
-      children: [
-        Expanded(
-          child: GlassCard(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  runtime.pendingCount.toString(),
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: TankColors.navy,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Queued inspections',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: TankColors.muted),
-                ),
-              ],
+  List<Widget> _content(BuildContext context, FieldRuntime runtime) {
+    final textTheme = Theme.of(context).textTheme;
+    final recorded = runtime.dashboard.inspections
+        .where((t) => t.isSubmitted)
+        .toList()
+        .reversed
+        .take(8)
+        .toList();
+    return [
+      Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: TankColors.navy,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: TankColors.navy.withValues(alpha: .18),
+              offset: const Offset(0, 12),
+              blurRadius: 28,
             ),
-          ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: GlassCard(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  runtime.outbox.blockedCount.toString(),
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: TankColors.navy,
-                    fontWeight: FontWeight.w700,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (isLargeText(context)) ...[
+              _Stat(value: runtime.pendingCount, label: 'Queued inspections'),
+              const SizedBox(height: 12),
+              _Stat(value: runtime.outbox.blockedCount, label: 'Need review'),
+            ] else
+              Row(
+                children: [
+                  Expanded(
+                    child: _Stat(
+                      value: runtime.pendingCount,
+                      label: 'Queued inspections',
+                    ),
+                  ),
+                  Container(width: 1, height: 44, color: Colors.white24),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _Stat(
+                      value: runtime.outbox.blockedCount,
+                      label: 'Need review',
+                    ),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: !runtime.online || runtime.outbox.syncing
+                  ? null
+                  : () => _perform(context, runtime.sync),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: TankColors.navy,
+                disabledBackgroundColor: Colors.white24,
+                disabledForegroundColor: Colors.white70,
+              ),
+              icon: const Icon(Symbols.sync_rounded),
+              label: Text(
+                runtime.outbox.syncing ? 'Syncing…' : 'Sync queued inspections',
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              runtime.online
+                  ? 'Queued work stays on this phone until the server sends a receipt.'
+                  : 'Sync is paused. Queued work stays on this phone.',
+              style: textTheme.bodySmall?.copyWith(color: Colors.white70),
+            ),
+          ],
+        ),
+      ),
+      const SectionHeading('This device'),
+      if (runtime.outbox.entries.isEmpty)
+        const NoticeCard(
+          title: 'No device activity yet',
+          message:
+              'Save an inspection to see its draft, queue and receipt here.',
+          icon: Symbols.history_rounded,
+        )
+      else
+        ListGroupCard(
+          children: [
+            for (final entry in runtime.outbox.entries.reversed)
+              TankListRow(
+                leading: AccentTile(
+                  switch (entry.state) {
+                    DraftState.synced => TankAccents.receipt,
+                    DraftState.blocked => TankAccents.concern,
+                    DraftState.pending => TankAccents.upload,
+                    DraftState.draft => TankAccents.inspection,
+                  },
+                  background: entry.state == DraftState.blocked
+                      ? TankColors.caution
+                      : TankColors.mint,
+                  foreground: entry.state == DraftState.blocked
+                      ? TankColors.amber
+                      : TankColors.tealDeep,
+                ),
+                title: entryLabel(entry),
+                meta: [
+                  MetaLine(
+                    TankMeta.clock,
+                    'Observed ${recordTime(entry.command.observedAt)}',
+                  ),
+                  if (entry.receipt != null)
+                    MetaLine(
+                      TankMeta.fileCheck,
+                      'Server received ${recordTime(entry.receipt!.receivedAt)}',
+                    ),
+                  if (entry.command.evidence.isNotEmpty)
+                    MetaLine(
+                      TankMeta.paperclip,
+                      '${entry.command.evidence.length} photos',
+                    ),
+                  if (entry.error != null)
+                    MetaLine(
+                      TankMeta.source,
+                      entry.error!,
+                      color: TankColors.amber,
+                    ),
+                ],
+                trailing: Tooltip(
+                  message: 'View saved inspection',
+                  child: IconButton(
+                    onPressed: () =>
+                        context.push('/inspection/${entry.command.taskId}'),
+                    icon: const Icon(Symbols.chevron_right_rounded),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Need review',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: TankColors.muted),
-                ),
-              ],
-            ),
-          ),
+                onTap: () =>
+                    context.push('/inspection/${entry.command.taskId}'),
+              ),
+          ],
+        ),
+      if (runtime.workOutbox.entries.isNotEmpty) ...[
+        const SectionHeading('Work-order steps'),
+        ListGroupCard(
+          children: [
+            for (final entry in runtime.workOutbox.entries.reversed)
+              TankListRow(
+                leading: const AccentTile(TankAccents.repair),
+                title: entry.error == null
+                    ? draftLabel(entry.state)
+                    : 'Sync failed',
+                subtitle: entry.error ?? entry.command.notes,
+                onTap: () => context.push('/work/${entry.command.orderId}'),
+              ),
+          ],
         ),
       ],
-    ),
-    const SizedBox(height: 20),
-    FilledButton.icon(
-      onPressed: !runtime.online || runtime.outbox.syncing
-          ? null
-          : () => _perform(context, runtime.sync),
-      icon: const Icon(Icons.sync_rounded),
-      label: Text(
-        runtime.outbox.syncing ? 'Syncing…' : 'Sync queued inspections',
-      ),
-    ),
-    const SectionHeading('This device'),
-    if (runtime.outbox.entries.isEmpty)
-      const NoticeCard(
-        title: 'No device activity yet',
-        message: 'Save an inspection to see its draft, queue and receipt here.',
-        icon: Icons.history_rounded,
-      ),
-    for (final entry in runtime.outbox.entries.reversed)
-      Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: GlassCard(
+      if (recorded.isNotEmpty) ...[
+        const SectionHeading('Recorded checks'),
+        RecordCard(
+          padding: EdgeInsets.zero,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              StatusPill(
-                entryLabel(entry),
-                icon: entry.state == DraftState.synced
-                    ? Icons.receipt_long_outlined
-                    : Icons.save_outlined,
-                caution: entry.state == DraftState.blocked,
-              ),
-              const SizedBox(height: 12),
-              Text('Observed ${recordTime(entry.command.observedAt)}'),
-              if (entry.receipt != null)
-                Text(
-                  'Server received ${recordTime(entry.receipt!.receivedAt)}',
-                  style: const TextStyle(color: TankColors.muted),
-                ),
-              if (entry.error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    entry.error!,
-                    style: const TextStyle(color: TankColors.amber),
+              for (final (index, task) in recorded.indexed) ...[
+                if (index > 0)
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                TankListRow(
+                  leading: AssetBadge(
+                    runtime.dashboard.assetFor(task).type,
+                    size: 40,
                   ),
+                  title: runtime.dashboard.assetFor(task).label,
+                  meta: [
+                    MetaLine(
+                      TankMeta.fileCheck,
+                      'Received ${recordTime(task.submittedAt!)}',
+                    ),
+                    MetaLine(
+                      TankMeta.hash,
+                      'Checklist v${runtime.dashboard.templateFor(task).version}',
+                    ),
+                  ],
                 ),
-              TextButton(
-                onPressed: () =>
-                    context.push('/inspection/${entry.command.taskId}'),
-                child: const Text('View saved inspection'),
-              ),
+              ],
             ],
           ),
         ),
+      ],
+    ];
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat({required this.value, required this.label});
+  final int value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        '$value',
+        style: Theme.of(
+          context,
+        ).textTheme.displaySmall?.copyWith(color: Colors.white),
       ),
-    const SectionHeading('Work-order steps'),
-    for (final entry in runtime.workOutbox.entries.reversed)
-      DenseCard(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(
-            entry.error == null ? draftLabel(entry.state) : 'Sync failed',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text(entry.error ?? entry.command.notes),
-          onTap: () => context.push('/work/${entry.command.orderId}'),
-        ),
+      Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.labelMedium?.copyWith(color: Colors.white70),
       ),
-    const SectionHeading('Recorded checks'),
-    for (final task
-        in runtime.dashboard.inspections
-            .where((t) => t.isSubmitted)
-            .toList()
-            .reversed
-            .take(8))
-      Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: NoticeCard(
-          paperSurface: true,
-          title: runtime.dashboard.assetFor(task).label,
-          message:
-              'Received ${recordTime(task.submittedAt!)} · Checklist v${runtime.dashboard.templateFor(task).version}',
-          icon: Icons.fact_check_outlined,
-        ),
-      ),
-  ];
+    ],
+  );
 }

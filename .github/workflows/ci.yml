@@ -36,6 +36,9 @@ jobs:
       - name: Durable outbox and SQLite tests
         working-directory: packages/offline_sync
         run: flutter test --no-pub --reporter expanded
+      - name: Design system typography and navigation tests
+        working-directory: packages/design_system
+        run: flutter test --no-pub --reporter expanded
       - name: Field interaction and recovery tests
         working-directory: apps/field_app
         run: flutter test --no-pub --reporter expanded

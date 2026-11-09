@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'runtime.dart';
 import 'today.dart';
@@ -81,11 +82,16 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
                                     showSimulationBadge: false,
                                   ),
                                 ),
-                                IconButton.filledTonal(
+                                IconButton.filled(
                                   tooltip: 'Scan water point QR',
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: TankColors.navy,
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size(48, 48),
+                                  ),
                                   onPressed: () => context.push('/scan'),
                                   icon: const Icon(
-                                    Icons.qr_code_scanner_rounded,
+                                    Symbols.qr_code_scanner_rounded,
                                   ),
                                 ),
                               ],

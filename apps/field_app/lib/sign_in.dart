@@ -53,56 +53,95 @@ class SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) => TankBackdrop(
     child: Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: GlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const TankBrand(surface: 'FIELD', showSimulationBadge: false),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Keep the loop\nmoving.',
-                    style: Theme.of(context).textTheme.headlineLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('Sign in with your assigned facility account.'),
-                  const SizedBox(height: 24),
-                  TextField(
-                    controller: email,
-                    keyboardType: TextInputType.emailAddress,
-                    autofillHints: const [AutofillHints.email],
-                    decoration: const InputDecoration(
-                      labelText: 'Email address',
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: TankColors.line),
+                  boxShadow: [
+                    BoxShadow(
+                      color: TankColors.navy.withValues(alpha: .08),
+                      offset: const Offset(0, 16),
+                      blurRadius: 40,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: password,
-                    obscureText: true,
-                    autofillHints: const [AutofillHints.password],
-                    decoration: const InputDecoration(labelText: 'Password'),
-                    onSubmitted: (_) {
-                      if (!busy) unawaited(submit());
-                    },
-                  ),
-                  if (error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Text(
-                        error!,
-                        style: const TextStyle(color: TankColors.amber),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const LayeredRecordArt(
+                        accent: TankAccents.inspection,
+                        label: 'EVERY CHECK, RECORDED',
+                        height: 170,
                       ),
-                    ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: busy ? null : submit,
-                    child: Text(busy ? 'Signing in…' : 'Sign in'),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const TankBrand(
+                              surface: 'FIELD',
+                              showSimulationBadge: false,
+                            ),
+                            const SizedBox(height: 24),
+                            const TwoToneHeading('Keep the loop\n', 'moving.'),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Sign in with your assigned facility account.',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: TankColors.muted),
+                            ),
+                            const SizedBox(height: 24),
+                            TextField(
+                              controller: email,
+                              keyboardType: TextInputType.emailAddress,
+                              autofillHints: const [AutofillHints.email],
+                              decoration: const InputDecoration(
+                                labelText: 'Email address',
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: password,
+                              obscureText: true,
+                              autofillHints: const [AutofillHints.password],
+                              decoration: const InputDecoration(
+                                labelText: 'Password',
+                              ),
+                              onSubmitted: (_) {
+                                if (!busy) unawaited(submit());
+                              },
+                            ),
+                            if (error != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 16),
+                                child: Text(
+                                  error!,
+                                  style: const TextStyle(
+                                    color: TankColors.amber,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 24),
+                            FilledButton(
+                              onPressed: busy ? null : submit,
+                              child: Text(busy ? 'Signing in…' : 'Sign in'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
