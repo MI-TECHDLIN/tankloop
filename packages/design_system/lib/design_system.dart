@@ -957,33 +957,35 @@ class FloatingNav extends StatelessWidget {
     } else {
       content = icon;
     }
-    // Children are excluded so the label is announced once; the tap action
-    // must therefore be restated here for screen readers.
+    // One node per destination: this label, the InkWell's tap action and the
+    // selected state. The visible icon and text are excluded so the label is
+    // announced once, and the tooltip only serves long-press.
     return Semantics(
+      container: true,
       button: true,
       selected: active,
       label: labels[index],
-      onTap: () => onSelected(index),
-      excludeSemantics: true,
       child: Tooltip(
         message: labels[index],
         excludeFromSemantics: true,
         child: InkWell(
           borderRadius: BorderRadius.circular(25),
           onTap: () => onSelected(index),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            constraints: const BoxConstraints(minHeight: 56),
-            padding: EdgeInsets.symmetric(
-              vertical: full ? 8 : 10,
-              horizontal: full ? 2 : 8,
+          child: ExcludeSemantics(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              constraints: const BoxConstraints(minHeight: 56),
+              padding: EdgeInsets.symmetric(
+                vertical: full ? 8 : 10,
+                horizontal: full ? 2 : 8,
+              ),
+              decoration: BoxDecoration(
+                color: active ? TankColors.navy : Colors.transparent,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Center(heightFactor: 1, child: content),
             ),
-            decoration: BoxDecoration(
-              color: active ? TankColors.navy : Colors.transparent,
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: Center(heightFactor: 1, child: content),
           ),
         ),
       ),

@@ -111,10 +111,11 @@ void main() {
         final handle = tester.ensureSemantics();
         expect(
           tester.getSemantics(find.bySemanticsLabel('Activity')),
-          matchesSemantics(
+          isSemantics(
             label: 'Activity',
             isButton: true,
             hasSelectedState: true,
+            isFocusable: true,
             hasTapAction: true,
           ),
         );
