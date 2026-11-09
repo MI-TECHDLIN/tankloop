@@ -145,15 +145,17 @@ class ActivityScreen extends ConsumerWidget {
           ],
         ),
       ),
-      const SectionHeading('This device'),
-      if (runtime.outbox.entries.isEmpty)
+      // With no history at all, the empty state above already says this.
+      if (runtime.outbox.entries.isEmpty && recorded.isNotEmpty) ...[
+        const SectionHeading('This device'),
         const NoticeCard(
           title: 'No device activity yet',
           message:
               'Save an inspection to see its draft, queue and receipt here.',
           icon: Symbols.history_rounded,
-        )
-      else
+        ),
+      ] else if (runtime.outbox.entries.isNotEmpty) ...[
+        const SectionHeading('This device'),
         ListGroupCard(
           children: [
             for (final entry in runtime.outbox.entries.reversed)
@@ -208,6 +210,7 @@ class ActivityScreen extends ConsumerWidget {
               ),
           ],
         ),
+      ],
       if (runtime.workOutbox.entries.isNotEmpty) ...[
         const SectionHeading('Work-order steps'),
         ListGroupCard(

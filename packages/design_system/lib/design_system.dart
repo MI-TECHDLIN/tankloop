@@ -835,6 +835,8 @@ class FloatingNav extends StatelessWidget {
   });
   final int selected;
   final ValueChanged<int> onSelected;
+
+  /// The bar's full height, including its bottom safe-area inset.
   final ValueChanged<double>? onHeightMeasured;
   static const icons = [
     Symbols.today_rounded,
@@ -868,34 +870,34 @@ class FloatingNav extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    top: false,
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-      child: Center(
-        heightFactor: 1,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: _MeasuredGlassCard(
-            onHeightMeasured: onHeightMeasured,
-            radius: 30,
-            padding: const EdgeInsets.all(5),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final scaler = MediaQuery.textScalerOf(context);
-                final full = labelsFit(constraints.maxWidth, scaler);
-                return Row(
-                  children: [
-                    for (var index = 0; index < icons.length; index++)
-                      full || index == selected
-                          ? Expanded(child: _item(context, index, full))
-                          : SizedBox(
-                              width: _iconSlot,
-                              child: _item(context, index, full),
-                            ),
-                  ],
-                );
-              },
+  Widget build(BuildContext context) => _Measured(
+    onHeightMeasured: onHeightMeasured,
+    child: SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: _NavSurface(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final scaler = MediaQuery.textScalerOf(context);
+                  final full = labelsFit(constraints.maxWidth, scaler);
+                  return Row(
+                    children: [
+                      for (var index = 0; index < icons.length; index++)
+                        full || index == selected
+                            ? Expanded(child: _item(context, index, full))
+                            : SizedBox(
+                                width: _iconSlot,
+                                child: _item(context, index, full),
+                              ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -955,10 +957,13 @@ class FloatingNav extends StatelessWidget {
     } else {
       content = icon;
     }
+    // Children are excluded so the label is announced once; the tap action
+    // must therefore be restated here for screen readers.
     return Semantics(
       button: true,
       selected: active,
       label: labels[index],
+      onTap: () => onSelected(index),
       excludeSemantics: true,
       child: Tooltip(
         message: labels[index],
@@ -986,23 +991,18 @@ class FloatingNav extends StatelessWidget {
   }
 }
 
-class _MeasuredGlassCard extends StatefulWidget {
-  const _MeasuredGlassCard({
-    required this.child,
-    required this.radius,
-    required this.padding,
-    this.onHeightMeasured,
-  });
+/// Reports its child's laid-out height after every layout, so a text-size or
+/// safe-area change resizes the content inset beneath the bar.
+class _Measured extends StatefulWidget {
+  const _Measured({required this.child, this.onHeightMeasured});
   final Widget child;
-  final double radius;
-  final EdgeInsetsGeometry padding;
   final ValueChanged<double>? onHeightMeasured;
 
   @override
-  State<_MeasuredGlassCard> createState() => _MeasuredGlassCardState();
+  State<_Measured> createState() => _MeasuredState();
 }
 
-class _MeasuredGlassCardState extends State<_MeasuredGlassCard> {
+class _MeasuredState extends State<_Measured> {
   double? _reported;
 
   void _report() {
@@ -1015,31 +1015,37 @@ class _MeasuredGlassCardState extends State<_MeasuredGlassCard> {
 
   @override
   Widget build(BuildContext context) {
-    // Re-measure after every layout so a text-size change resizes the
-    // content inset beneath the bar.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _report();
     });
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(widget.radius),
-        boxShadow: [
-          BoxShadow(
-            color: TankColors.navy.withValues(alpha: .14),
-            offset: const Offset(0, 12),
-            blurRadius: 32,
-          ),
-        ],
-      ),
-      child: GlassCard(
-        radius: widget.radius,
-        padding: widget.padding,
-        elevation: 0,
-        color: Colors.white.withValues(alpha: .95),
-        child: widget.child,
-      ),
-    );
+    return widget.child;
   }
+}
+
+class _NavSurface extends StatelessWidget {
+  const _NavSurface({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(30),
+      boxShadow: [
+        BoxShadow(
+          color: TankColors.navy.withValues(alpha: .14),
+          offset: const Offset(0, 12),
+          blurRadius: 32,
+        ),
+      ],
+    ),
+    child: GlassCard(
+      radius: 30,
+      padding: const EdgeInsets.all(5),
+      elevation: 0,
+      color: Colors.white.withValues(alpha: .95),
+      child: child,
+    ),
+  );
 }
 
 /// Original vector artwork, drawn from product topology rather than stock or

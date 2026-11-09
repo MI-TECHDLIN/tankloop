@@ -29,11 +29,21 @@ class TodayScreen extends ConsumerWidget {
         final tasks = _openTasks(runtime);
         return FieldContent(
           runtime: runtime,
-          header: PageHeader(
-            eyebrow: 'Today · ${dayGreeting(runtime.dashboard.asOf)}',
-            eyebrowIcon: TankMeta.calendar,
-            lead: tasks.isEmpty ? 'All caught ' : 'Your next ',
-            emphasis: tasks.isEmpty ? 'up.' : 'check.',
+          header: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              PageHeader(
+                eyebrow: 'Today · ${dayGreeting(runtime.dashboard.asOf)}',
+                eyebrowIcon: TankMeta.calendar,
+                lead: tasks.isEmpty ? 'All caught ' : 'Your next ',
+                emphasis: tasks.isEmpty ? 'up.' : 'check.',
+              ),
+              const SizedBox(height: 18),
+              _FacilityLine(
+                label: runtime.dashboard.facility.label,
+                checks: tasks.length,
+              ),
+            ],
           ),
           empty: () => tasks.isEmpty,
           emptyState: _emptyState(context, runtime),
@@ -120,8 +130,6 @@ class TodayScreen extends ConsumerWidget {
         .where((o) => o.assigneeId == data.actorId)
         .toList();
     return [
-      _FacilityLine(label: data.facility.label, checks: tasks.length),
-      const SizedBox(height: 16),
       if (tasks.isNotEmpty) _priorityTask(context, runtime, tasks.first),
       if (runtime.failedCount > 0) ...[
         const SizedBox(height: 16),

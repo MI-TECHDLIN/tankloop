@@ -19,7 +19,6 @@ class FieldHome extends ConsumerStatefulWidget {
 class _FieldHomeState extends ConsumerState<FieldHome> {
   int selected = 0;
   double _navHeight = TankSpace.navHeight;
-  final GlobalKey _navKey = GlobalKey();
 
   Future<void> _perform(Future<void> Function() action) async {
     try {
@@ -40,10 +39,8 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
   @override
   Widget build(BuildContext context) {
     final runtime = ref.watch(runtimeProvider);
-    final mediaQuery = MediaQuery.of(context);
-    final bottomInset =
-        mediaQuery.viewPadding.bottom + mediaQuery.viewInsets.bottom;
-    final effectiveNavHeight = _navHeight + bottomInset + TankSpace.screen;
+    // The bar's measured height already includes its safe-area inset.
+    final effectiveNavHeight = _navHeight + TankSpace.screen;
 
     return AnimatedBuilder(
       animation: Listenable.merge([
@@ -111,9 +108,20 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
                 ),
               ),
             ),
-            bottomNavigationBar: Padding(
-              key: _navKey,
-              padding: EdgeInsets.only(bottom: bottomInset),
+            // Fade scrolled content out behind the floating bar so text
+            // never competes with the navigation labels.
+            bottomNavigationBar: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    TankColors.canvas.withValues(alpha: 0),
+                    TankColors.canvas.withValues(alpha: .94),
+                  ],
+                  stops: const [0, .5],
+                ),
+              ),
               child: FloatingNav(
                 selected: selected,
                 onSelected: (value) => setState(() => selected = value),

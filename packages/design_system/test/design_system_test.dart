@@ -108,6 +108,17 @@ void main() {
             label == 'Today' || full ? findsOneWidget : findsNothing,
           );
         }
+        final handle = tester.ensureSemantics();
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Activity')),
+          matchesSemantics(
+            label: 'Activity',
+            isButton: true,
+            hasSelectedState: true,
+            hasTapAction: true,
+          ),
+        );
+        handle.dispose();
         await tester.tap(find.byTooltip('Activity'));
         await tester.pumpAndSettle();
         expect(find.text('Activity'), findsOneWidget);

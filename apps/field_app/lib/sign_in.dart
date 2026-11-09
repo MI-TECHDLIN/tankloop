@@ -79,7 +79,7 @@ class SignInScreenState extends State<SignInScreen> {
                     children: [
                       const LayeredRecordArt(
                         accent: TankAccents.inspection,
-                        label: 'EVERY CHECK, RECORDED',
+                        label: 'FIELD RECORD',
                         height: 170,
                       ),
                       Padding(

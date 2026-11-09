@@ -395,16 +395,19 @@ class _FrontSheet extends StatelessWidget {
                       ],
                     ),
                     SizedBox(height: width * .1),
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.fade,
-                      softWrap: false,
-                      style: TextStyle(
-                        fontSize: math.max(8, width * .07),
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.1,
-                        color: TankColors.tealDeep,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: TextStyle(
+                          fontSize: math.max(8, width * .07),
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.1,
+                          color: TankColors.tealDeep,
+                        ),
                       ),
                     ),
                     SizedBox(height: width * .04),
