@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
@@ -17,6 +18,7 @@ import 'work_order.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerTankLoopLicenses();
   try {
     final config = AppConfig.environment();
     await Supabase.initialize(
@@ -35,14 +37,18 @@ Future<void> main() async {
         theme: tankLoopTheme(),
         home: TankBackdrop(
           child: Scaffold(
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: NoticeCard(
-                  title: 'Setup needs attention',
-                  message: error is FormatException
-                      ? error.message
-                      : 'Local storage or the configured service could not initialize. Check your configuration and reload.',
+            body: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: NoticeCard(
+                    title: 'Setup needs attention',
+                    message: error is FormatException
+                        ? error.message
+                        : 'Local storage or the configured service could not initialize. Check your configuration and reload.',
+                    icon: Symbols.settings_alert_rounded,
+                    caution: true,
+                  ),
                 ),
               ),
             ),
@@ -90,6 +96,21 @@ class _FieldBootstrapState extends State<FieldBootstrap> {
     super.dispose();
   }
 
+  void _retry() => setState(() {
+    _runtime = FieldRuntime.create(widget.config, widget.store);
+  });
+
+  /// Signs out without clearing this device: saved drafts stay in the
+  /// account-scoped store and return when the same account signs in again.
+  Future<void> _useAnotherAccount() async {
+    try {
+      await Supabase.instance.client.auth.signOut();
+    } catch (_) {
+      // The local session is removed before the server call; a network
+      // failure here still leaves the device signed out.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_runtime == null) {
@@ -110,26 +131,23 @@ class _FieldBootstrapState extends State<FieldBootstrap> {
           theme: tankLoopTheme(),
           home: TankBackdrop(
             child: Scaffold(
-              body: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: snapshot.hasError
-                      ? NoticeCard(
-                          title: 'Assignments unavailable',
-                          message: snapshot.error is RepositoryFailure
-                              ? snapshot.error.toString()
-                              : 'Connect to load your first assignments. Your existing device records have been retained.',
-                          action: TextButton(
-                            onPressed: () => setState(() {
-                              _runtime = FieldRuntime.create(
-                                widget.config,
-                                widget.store,
-                              );
-                            }),
-                            child: const Text('Retry'),
-                          ),
-                        )
-                      : const FieldLoadingSkeleton(),
+              body: SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 480),
+                      child: snapshot.hasError
+                          ? _BootstrapFailure(
+                              message: snapshot.error is RepositoryFailure
+                                  ? snapshot.error.toString()
+                                  : 'Connect to load your first assignments. Your existing device records have been retained.',
+                              onRetry: _retry,
+                              onUseAnotherAccount: _useAnotherAccount,
+                            )
+                          : const FieldLoadingSkeleton(),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -138,6 +156,45 @@ class _FieldBootstrapState extends State<FieldBootstrap> {
       },
     );
   }
+}
+
+class _BootstrapFailure extends StatelessWidget {
+  const _BootstrapFailure({
+    required this.message,
+    required this.onRetry,
+    required this.onUseAnotherAccount,
+  });
+  final String message;
+  final VoidCallback onRetry;
+  final VoidCallback onUseAnotherAccount;
+
+  @override
+  Widget build(BuildContext context) => EmptyStateCard(
+    art: const LayeredRecordArt(
+      accent: TankAccents.offline,
+      label: 'ASSIGNMENTS',
+      height: 140,
+    ),
+    title: 'Assignments unavailable',
+    message: message,
+    actions: [
+      FilledButton.icon(
+        onPressed: onRetry,
+        icon: const Icon(Symbols.refresh_rounded),
+        label: const Text('Retry'),
+      ),
+      OutlinedButton.icon(
+        onPressed: onUseAnotherAccount,
+        icon: const Icon(Symbols.switch_account_rounded),
+        label: const Text('Use another account'),
+      ),
+      Text(
+        'Saved drafts stay on this device for this account.',
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+    ],
+  );
 }
 
 class FieldApp extends StatefulWidget {

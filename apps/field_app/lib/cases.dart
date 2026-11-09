@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:tankloop_localization/localization.dart';
 import 'runtime.dart';
 
 import 'field_content.dart';
+import 'plain_language.dart';
 
 class CasesScreen extends ConsumerWidget {
   const CasesScreen({super.key});
@@ -16,7 +18,23 @@ class CasesScreen extends ConsumerWidget {
       animation: Listenable.merge([runtime, runtime.outbox]),
       builder: (context, _) => FieldContent(
         runtime: runtime,
+        header: const PageHeader(
+          eyebrow: 'Cases',
+          eyebrowIcon: TankMeta.fileText,
+          lead: 'Concerns & ',
+          emphasis: 'follow-ups.',
+        ),
         empty: () => runtime.dashboard.cases.isEmpty,
+        emptyState: const EmptyStateCard(
+          art: LayeredRecordArt(
+            accent: TankAccents.verified,
+            label: 'NO OPEN CASES',
+            height: 150,
+          ),
+          title: 'No concerns recorded',
+          message:
+              'This describes the record, not the quality or safety of the water.',
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: _content(context, runtime),
@@ -26,82 +44,161 @@ class CasesScreen extends ConsumerWidget {
   }
 
   List<Widget> _content(BuildContext context, FieldRuntime runtime) => [
-    Text(
-      'Every concern.\nAn accountable next step.',
-      style: Theme.of(context).textTheme.displayMedium,
-    ),
-    const SizedBox(height: 16),
-    NoticeCard(
-      prominent: true,
-      title: 'Repair is not resolution',
-      message:
-          'Cases remain open until the applicable follow-up evidence is reviewed and communication is recorded.',
-      icon: Icons.fact_check_outlined,
-    ),
-    const SectionHeading('Case records'),
-    if (runtime.dashboard.cases.isEmpty)
-      const NoticeCard(
-        title: 'No concerns recorded',
-        message:
-            'This describes the record, not the quality or safety of the water.',
+    Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .7),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: TankColors.line),
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'How a case closes',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 12),
+          const FlowSteps(steps: caseSteps),
+          const SizedBox(height: 12),
+          Text(
+            'Repair is not resolution. A case stays open until the follow-up evidence is reviewed and the outcome is shared.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    ),
+    if (runtime.dashboard.cases.isNotEmpty)
+      const SectionHeading('Case records'),
     for (final item in runtime.dashboard.cases.reversed)
       Padding(
         padding: const EdgeInsets.only(bottom: 16),
-        child: GlassCard(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(bottom: 12),
-            title: Text(
-              item.pointLabel,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+        child: _CaseCard(item: item),
+      ),
+  ];
+}
+
+class _CaseCard extends StatelessWidget {
+  const _CaseCard({required this.item});
+  final CaseSummary item;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final open = item.state != IncidentState.resolved;
+    final next = Text(caseNextStep(item.state), style: textTheme.bodyMedium);
+    return RecordCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          LeadingRow(
+            leading: AccentTile(
+              sourceAccent(item.source),
+              size: 48,
+              background: open ? TankColors.caution : TankColors.mint,
+              foreground: open ? TankColors.amber : TankColors.tealDeep,
             ),
-            subtitle: Text(
-              '${humanState(wireName(item.state))}\n${humanState(wireName(item.source))} · ${recordDate(item.reportedAt)}',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Eyebrow(sourceName(item.source)),
+                const SizedBox(height: 4),
+                Text(item.pointLabel, style: textTheme.titleLarge),
+              ],
             ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 14,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: StatusPill(
-                  item.hasOwner
-                      ? 'Accountable owner assigned'
-                      : 'Awaiting assignment',
-                  icon: Icons.person_outline_rounded,
-                  caution: !item.hasOwner,
-                ),
+              StateChip(
+                humanState(wireName(item.state)),
+                tone: open ? ChipTone.caution : ChipTone.positive,
               ),
-              const SizedBox(height: 12),
+              MetaLine(TankMeta.calendar, recordDate(item.reportedAt)),
+              MetaLine(
+                TankMeta.user,
+                item.hasOwner
+                    ? 'Accountable owner assigned'
+                    : 'Awaiting assignment',
+                color: item.hasOwner ? null : TankColors.amber,
+              ),
               if (item.dueAt != null)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Response due ${recordTime(item.dueAt!)}',
-                    style: const TextStyle(color: TankColors.muted),
-                  ),
-                ),
-              for (final event in item.events)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.circle, size: 8, color: TankColors.teal),
-                      const SizedBox(width: 12),
-                      Expanded(child: Text(event)),
-                    ],
-                  ),
-                ),
-              if (item.events.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(top: 12),
-                  child: Text(
-                    'Privileged transitions and audit are available through the server RPCs.',
-                    style: TextStyle(color: TankColors.muted),
-                  ),
+                MetaLine(
+                  TankMeta.clock,
+                  'Response due ${recordTime(item.dueAt!)}',
                 ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          FlowSteps(steps: caseSteps, current: caseStep(item.state)),
+          const SizedBox(height: 16),
+          if (caseNeedsAction(item))
+            ExceptionPanel(
+              label: 'What happens next',
+              title: 'An owner is needed',
+              message: caseNextStep(item.state),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: TankColors.mint,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Eyebrow('What happens next'),
+                  const SizedBox(height: 4),
+                  next,
+                ],
+              ),
+            ),
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(bottom: 4),
+              title: Text(
+                'Case history (${item.events.length})',
+                style: textTheme.titleSmall,
+              ),
+              children: [
+                for (final event in item.events)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.only(top: 7, right: 12),
+                          decoration: const BoxDecoration(
+                            color: TankColors.teal,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        Expanded(child: Text(event)),
+                      ],
+                    ),
+                  ),
+                if (item.events.isEmpty)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'No updates have been recorded on this case yet.',
+                      style: textTheme.bodySmall,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
-  ];
+    );
+  }
 }

@@ -6,12 +6,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  material_symbols_icons: ^4.2960.0
   tankloop_domain: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
+# Provenance, versions and checksums for bundled fonts: THIRD_PARTY_NOTICES.md
 flutter:
+  assets:
+    - assets/licenses/
   fonts:
     - family: PlayfairDisplay
       fonts:
@@ -23,3 +27,21 @@ flutter:
           weight: 600
         - asset: assets/fonts/PlayfairDisplay-Variable.ttf
           weight: 700
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
+    - family: PhosphorDuotone
+      fonts:
+        - asset: assets/icons/Phosphor-Duotone.ttf
+    - family: Lucide
+      fonts:
+        - asset: assets/icons/Lucide.ttf

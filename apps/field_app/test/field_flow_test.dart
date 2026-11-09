@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
@@ -111,7 +112,7 @@ void main() {
     addTearDown(runtime.outbox.dispose);
     await tester.pumpWidget(FieldApp(runtime: runtime));
     await tester.pumpAndSettle();
-    await tapVisible(tester, find.text('Start inspection'));
+    await tapVisible(tester, find.text('Continue inspection'));
     await tester.ensureVisible(find.text('Photo evidence'));
     await tester.runAsync(
       () async => Future<void>.delayed(const Duration(milliseconds: 100)),
@@ -119,7 +120,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(Image), findsWidgets);
     expect(
-      find.byIcon(Icons.broken_image_outlined),
+      find.byIcon(Symbols.broken_image_rounded),
       findsNothing,
       reason: 'Saved photo must remain viewable after OS clears camera cache',
     );
@@ -268,7 +269,7 @@ void main() {
       await tapVisible(tester, find.byTooltip('Profile'));
       await tapVisible(tester, find.text('Pause sync'));
       await tapVisible(tester, find.byTooltip('Today'));
-      await tapVisible(tester, find.text('Start inspection'));
+      await tapVisible(tester, find.text('Continue inspection'));
       expect(
         tester.widget<TextField>(visitNotes).controller!.text,
         'Visit: tank lid needs attention.',

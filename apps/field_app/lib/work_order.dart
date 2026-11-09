@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_domain/domain.dart';
@@ -90,10 +91,14 @@ class _WorkOrderScreenState extends ConsumerState<WorkOrderScreen> {
         return TankBackdrop(
           child: Scaffold(
             appBar: AppBar(
-              title: const Text('Work order'),
+              backgroundColor: Colors.transparent,
+              title: const Text(
+                'Work order',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
               leading: IconButton(
                 onPressed: busy ? null : () => context.go('/'),
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Symbols.arrow_back_rounded),
                 tooltip: 'Back to Today',
               ),
             ),
@@ -101,7 +106,7 @@ class _WorkOrderScreenState extends ConsumerState<WorkOrderScreen> {
               onRefresh: () => runtime.refresh(),
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                 children: [
                   FieldContent(
                     runtime: runtime,
@@ -111,17 +116,22 @@ class _WorkOrderScreenState extends ConsumerState<WorkOrderScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (order != null) ...[
-                          const SizedBox(height: 20),
-                          Text(
-                            order.task,
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Recorded state: ${wireName(order.state).replaceAll('_', ' ')}',
+                          const SizedBox(height: 4),
+                          TaskCard(
+                            kind: 'Repair',
+                            title: order.task,
+                            leading: const AccentTile(
+                              TankAccents.repair,
+                              size: 52,
+                            ),
+                            status: StateChip(
+                              'Recorded state: ${wireName(order.state).replaceAll('_', ' ')}',
+                              tone: ChipTone.info,
+                            ),
                           ),
                           const SizedBox(height: 16),
-                          const NoticeCard(
+                          const ExceptionPanel(
+                            label: 'Remember',
                             title: 'Repair is not resolution',
                             message:
                                 'Recording this action does not close the concern. Manager review and any required follow-up remain separate.',
@@ -189,7 +199,7 @@ class _WorkOrderScreenState extends ConsumerState<WorkOrderScreen> {
                                             .evidence,
                                       ];
                                     }),
-                              icon: const Icon(Icons.camera_alt_outlined),
+                              icon: const Icon(Symbols.add_a_photo_rounded),
                               label: const Text('Add step photo'),
                             ),
                             OutlinedButton(

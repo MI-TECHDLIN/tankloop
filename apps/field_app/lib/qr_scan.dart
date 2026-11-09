@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'runtime.dart';
@@ -65,16 +66,20 @@ class _QrScanPageState extends ConsumerState<QrScanPage> {
   Widget build(BuildContext context) => TankBackdrop(
     child: Scaffold(
       appBar: AppBar(
-        title: const Text('Open water point'),
+        backgroundColor: Colors.transparent,
+        title: const Text(
+          'Open water point',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         leading: IconButton(
           tooltip: 'Back to Today',
           onPressed: () => context.go('/'),
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(Symbols.arrow_back_rounded),
         ),
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
             FieldContent(
               runtime: ref.watch(runtimeProvider),
@@ -131,7 +136,7 @@ class _QrScanPageState extends ConsumerState<QrScanPage> {
                         onPressed: resolving
                             ? null
                             : () => resolve(manual.text),
-                        icon: const Icon(Icons.arrow_forward_rounded),
+                        icon: const Icon(Symbols.arrow_forward_rounded),
                       ),
                     ),
                     onSubmitted: resolving ? null : resolve,
@@ -145,7 +150,7 @@ class _QrScanPageState extends ConsumerState<QrScanPage> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.key_rounded),
+                        : const Icon(Symbols.keyboard_rounded),
                     label: Text(
                       resolving ? 'Opening point…' : 'Use manual code',
                     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'runtime.dart';
 import 'today.dart';
@@ -18,7 +19,6 @@ class FieldHome extends ConsumerStatefulWidget {
 class _FieldHomeState extends ConsumerState<FieldHome> {
   int selected = 0;
   double _navHeight = TankSpace.navHeight;
-  final GlobalKey _navKey = GlobalKey();
 
   Future<void> _perform(Future<void> Function() action) async {
     try {
@@ -39,10 +39,8 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
   @override
   Widget build(BuildContext context) {
     final runtime = ref.watch(runtimeProvider);
-    final mediaQuery = MediaQuery.of(context);
-    final bottomInset =
-        mediaQuery.viewPadding.bottom + mediaQuery.viewInsets.bottom;
-    final effectiveNavHeight = _navHeight + bottomInset + TankSpace.screen;
+    // The bar's measured height already includes its safe-area inset.
+    final effectiveNavHeight = _navHeight + TankSpace.screen;
 
     return AnimatedBuilder(
       animation: Listenable.merge([
@@ -81,11 +79,16 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
                                     showSimulationBadge: false,
                                   ),
                                 ),
-                                IconButton.filledTonal(
+                                IconButton.filled(
                                   tooltip: 'Scan water point QR',
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: TankColors.navy,
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size(48, 48),
+                                  ),
                                   onPressed: () => context.push('/scan'),
                                   icon: const Icon(
-                                    Icons.qr_code_scanner_rounded,
+                                    Symbols.qr_code_scanner_rounded,
                                   ),
                                 ),
                               ],
@@ -105,9 +108,20 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
                 ),
               ),
             ),
-            bottomNavigationBar: Padding(
-              key: _navKey,
-              padding: EdgeInsets.only(bottom: bottomInset),
+            // Fade scrolled content out behind the floating bar so text
+            // never competes with the navigation labels.
+            bottomNavigationBar: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    TankColors.canvas.withValues(alpha: 0),
+                    TankColors.canvas.withValues(alpha: .94),
+                  ],
+                  stops: const [0, .5],
+                ),
+              ),
               child: FloatingNav(
                 selected: selected,
                 onSelected: (value) => setState(() => selected = value),

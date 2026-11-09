@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:tankloop_localization/localization.dart';
@@ -8,6 +9,7 @@ import 'package:tankloop_offline_sync/offline_sync.dart';
 import 'runtime.dart';
 
 import 'field_content.dart';
+import 'plain_language.dart';
 import 'sync_status.dart';
 
 class TodayScreen extends ConsumerWidget {
@@ -23,18 +25,42 @@ class TodayScreen extends ConsumerWidget {
         runtime.outbox,
         runtime.workOutbox,
       ]),
-      builder: (context, _) => FieldContent(
-        runtime: runtime,
-        empty: () => !runtime.dashboard.inspections.any((t) => !t.isSubmitted),
-        child: Builder(
-          builder: (context) => Column(
+      builder: (context, _) {
+        final tasks = _openTasks(runtime);
+        return FieldContent(
+          runtime: runtime,
+          header: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: _content(context, runtime),
+            children: [
+              PageHeader(
+                eyebrow: 'Today · ${dayGreeting(runtime.dashboard.asOf)}',
+                eyebrowIcon: TankMeta.calendar,
+                lead: tasks.isEmpty ? 'All caught ' : 'Your next ',
+                emphasis: tasks.isEmpty ? 'up.' : 'check.',
+              ),
+              const SizedBox(height: 18),
+              _FacilityLine(
+                label: runtime.dashboard.facility.label,
+                checks: tasks.length,
+              ),
+            ],
           ),
-        ),
-      ),
+          empty: () => tasks.isEmpty,
+          emptyState: _emptyState(context, runtime),
+          child: Builder(
+            builder: (context) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: _content(context, runtime, tasks),
+            ),
+          ),
+        );
+      },
     );
   }
+
+  List<InspectionTask> _openTasks(FieldRuntime runtime) =>
+      runtime.dashboard.inspections.where((t) => !t.isSubmitted).toList()
+        ..sort((a, b) => a.dueAt.compareTo(b.dueAt));
 
   Future<void> _perform(
     BuildContext context,
@@ -55,383 +81,214 @@ class TodayScreen extends ConsumerWidget {
     }
   }
 
-  List<Widget> _content(BuildContext context, FieldRuntime runtime) {
+  Widget _emptyState(
+    BuildContext context,
+    FieldRuntime runtime,
+  ) => EmptyStateCard(
+    art: const LayeredRecordArt(
+      accent: TankAccents.scheduled,
+      label: 'NO CHECKS DUE',
+      height: 150,
+    ),
+    title: 'No checks assigned right now',
+    message:
+        'New inspections from your manager appear here. An empty list is not a water-quality finding.',
+    actions: [
+      FilledButton.icon(
+        onPressed: runtime.refreshing
+            ? null
+            : () => _perform(context, runtime.refresh),
+        icon: const Icon(Symbols.refresh_rounded),
+        label: const Text('Refresh assignments'),
+      ),
+      OutlinedButton.icon(
+        onPressed: () => context.push('/scan'),
+        icon: const Icon(Symbols.qr_code_scanner_rounded),
+        label: const Text('Scan a water point'),
+      ),
+    ],
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'How a check works',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 12),
+        const FlowSteps(steps: inspectionSteps),
+      ],
+    ),
+  );
+
+  List<Widget> _content(
+    BuildContext context,
+    FieldRuntime runtime,
+    List<InspectionTask> tasks,
+  ) {
     final data = runtime.dashboard;
-    final tasks = data.inspections.where((t) => !t.isSubmitted).toList();
-    final due = tasks
-        .where(
-          (t) => !t.dueAt.isAfter(data.asOf.add(const Duration(hours: 24))),
-        )
-        .length;
-    final cases = data.cases
-        .where((c) => c.state != IncidentState.resolved)
-        .length;
+    final orders = data.workOrders
+        .where((o) => o.assigneeId == data.actorId)
+        .toList();
     return [
-      Text(
-        dayGreeting(data.asOf),
-        style: const TextStyle(
-          color: TankColors.muted,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      const SizedBox(height: 8),
-      Text(
-        'Every check leaves a record.',
-        style: Theme.of(context).textTheme.displayMedium,
-      ),
-      const SizedBox(height: 8),
-      Text(
-        'Inspections, lab reviews, and fixes - each dated and accountable.',
-        style: Theme.of(
-          context,
-        ).textTheme.bodyLarge?.copyWith(color: TankColors.muted),
-      ),
-      const SizedBox(height: 24),
-      HeroSurface(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final content = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'YOUR WATER NETWORK',
-                  style: TextStyle(
-                    fontSize: 11,
-                    letterSpacing: 1.6,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  data.facility.label,
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${data.assets.length} connected assets · ${data.points.length} sampling points',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: tasks.isEmpty
-                      ? () => onActivity()
-                      : () => context.push('/inspection/${tasks.first.id}'),
-                  icon: const Icon(Icons.add_task_rounded, size: 20),
-                  label: Text(
-                    tasks.isEmpty ? 'View activity' : 'Start inspection',
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: TankColors.tealDeep,
-                  ),
-                ),
-              ],
-            );
-            final artworkSize = constraints.maxWidth > 620 ? 280.0 : 320.0;
-            return constraints.maxWidth > 620
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(flex: 3, child: content),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 2,
-                        child: WaterNetworkArtwork(size: artworkSize),
-                      ),
-                    ],
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(
-                        height: artworkSize,
-                        child: WaterNetworkArtwork(size: artworkSize),
-                      ),
-                      const SizedBox(height: 16),
-                      content,
-                    ],
-                  );
-          },
-        ),
-      ),
-      const SizedBox(height: 16),
-      // Consolidated metrics row
-      Row(
-        children: [
-          Expanded(
-            child: GlassCard(
-              padding: const EdgeInsets.all(20),
-              radius: TankSpace.radiusStandard,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: TankColors.mint,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.event_note_outlined,
-                          color: TankColors.teal,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              tasks.length.toString(),
-                              style: Theme.of(context).textTheme.displaySmall
-                                  ?.copyWith(
-                                    color: TankColors.navy,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                            Text(
-                              'Checks scheduled',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: TankColors.muted),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (due > 0) ...[
-                    const SizedBox(height: 8),
-                    StatusPill(
-                      '$due due in 24h',
-                      icon: Icons.schedule_rounded,
-                      caution: true,
-                      compact: true,
-                    ),
-                  ],
-                ],
-              ),
-            ),
+      if (tasks.isNotEmpty) _priorityTask(context, runtime, tasks.first),
+      if (runtime.failedCount > 0) ...[
+        const SizedBox(height: 16),
+        ExceptionPanel(
+          label: 'Needs attention',
+          title: '${runtime.failedCount} sync failed',
+          message:
+              'Saved records are retained on this device. Open Activity to retry or review them.',
+          action: TextButton.icon(
+            onPressed: onActivity,
+            icon: const Icon(Symbols.arrow_forward_rounded, size: 20),
+            label: const Text('Open Activity'),
+            style: TextButton.styleFrom(foregroundColor: TankColors.amber),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: GlassCard(
-              padding: const EdgeInsets.all(20),
-              radius: TankSpace.radiusStandard,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: TankColors.caution,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.fact_check_outlined,
-                          color: TankColors.amber,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              cases.toString(),
-                              style: Theme.of(context).textTheme.displaySmall
-                                  ?.copyWith(
-                                    color: TankColors.navy,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                            Text(
-                              'Open concerns',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: TankColors.muted),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (cases > 0) ...[
-                    const SizedBox(height: 8),
-                    StatusPill(
-                      'Awaiting resolution',
-                      icon: Icons.hourglass_empty_rounded,
-                      caution: true,
-                      compact: true,
-                    ),
-                  ],
-                ],
+        ),
+      ],
+      if (tasks.length > 1) ...[
+        const SectionHeading('Up next'),
+        ListGroupCard(
+          children: [
+            for (final task in tasks.skip(1).take(4))
+              _queueRow(context, runtime, task),
+          ],
+        ),
+      ],
+      if (orders.isNotEmpty) ...[
+        const SectionHeading('Repairs assigned to you'),
+        ListGroupCard(
+          children: [
+            for (final order in orders)
+              TankListRow(
+                leading: const AccentTile(TankAccents.repair),
+                title: order.task,
+                subtitle: humanState(wireName(order.state)),
+                onTap: () => context.push('/work/${order.id}'),
               ),
+          ],
+        ),
+      ],
+      const SectionHeading('On this device'),
+      ListGroupCard(
+        children: [
+          TankListRow(
+            leading: AccentTile(
+              runtime.pendingCount == 0
+                  ? TankAccents.synced
+                  : TankAccents.upload,
+            ),
+            title: '${runtime.pendingCount} pending sync',
+            subtitle: runtime.pendingCount == 0
+                ? 'Drafts are saved locally. A submitted check gets its own receipt.'
+                : 'Your queued inspections stay on this device until acknowledged.',
+            trailing: TextButton(
+              onPressed: runtime.outbox.syncing || !runtime.online
+                  ? null
+                  : () => _perform(context, runtime.sync),
+              child: Text(runtime.outbox.syncing ? 'Syncing…' : 'Sync now'),
             ),
           ),
         ],
       ),
-      const SizedBox(height: 16),
-      SectionHeading(
-        'Your next checks',
-        trailing: StatusPill(
-          '${tasks.length} scheduled',
-          compact: true,
-          icon: Icons.event_note_outlined,
-        ),
-      ),
-      if (tasks.isEmpty)
-        const NoticeCard(
-          title: 'All assigned checks are recorded',
-          message:
-              'New scheduled checks will appear here. Completed inspections stay in Activity.',
-          icon: Icons.task_alt_rounded,
-        ),
-      for (final task in tasks.take(4)) _inspectionTile(context, runtime, task),
-      if (runtime.failedCount > 0)
-        NoticeCard(
-          title: '${runtime.failedCount} sync failed',
-          message:
-              'Saved records are retained. Open Activity to retry or review.',
-          caution: true,
-        ),
-      const SectionHeading('Assigned work orders'),
-      for (final order in runtime.dashboard.workOrders.where(
-        (o) => o.assigneeId == runtime.dashboard.actorId,
-      ))
-        DenseCard(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              order.task,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+      if (tasks.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: runtime.refreshing
+                ? null
+                : () => _perform(context, runtime.refresh),
+            icon: const Icon(Symbols.refresh_rounded, size: 20),
+            label: Text(
+              runtime.refreshing ? 'Refreshing…' : 'Refresh assignments',
             ),
-            subtitle: Text(
-              humanState(wireName(order.state)),
-              style: const TextStyle(color: TankColors.muted),
-            ),
-            trailing: const Icon(Icons.chevron_right, color: TankColors.muted),
-            onTap: () => context.push('/work/${order.id}'),
           ),
         ),
-      const SizedBox(height: 12),
-      NoticeCard(
-        title: '${runtime.pendingCount} pending sync',
-        message: runtime.pendingCount == 0
-            ? 'Drafts are saved locally. A submitted check gets its own receipt.'
-            : 'Your queued inspections stay on this device until acknowledged.',
-        icon: Icons.cloud_upload_outlined,
-        action: TextButton.icon(
-          onPressed: runtime.outbox.syncing || !runtime.online
-              ? null
-              : () => _perform(context, runtime.sync),
-          icon: const Icon(Icons.sync_rounded),
-          label: Text(runtime.outbox.syncing ? 'Syncing…' : 'Sync now'),
-        ),
-      ),
+      ],
     ];
   }
 
-  Widget _inspectionTile(
+  Widget _priorityTask(
     BuildContext context,
     FieldRuntime runtime,
     InspectionTask task,
   ) {
     final saved = runtime.outbox.forTask(task.id);
     final asset = runtime.dashboard.assetFor(task);
-    final overdue = task.dueAt.isBefore(runtime.dashboard.asOf);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: GlassCard(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: TankColors.mint,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.water_outlined,
-                    color: TankColors.teal,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        asset.label,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Text(
-                        'Due ${recordDate(task.dueAt)}',
-                        style: const TextStyle(
-                          color: TankColors.muted,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                StatusPill(
-                  saved == null
-                      ? (overdue ? 'Overdue' : 'Scheduled')
-                      : entryLabel(saved),
-                  caution:
-                      overdue && saved == null ||
-                      saved?.state == DraftState.blocked,
-                  compact: true,
-                  icon: saved == null
-                      ? Icons.schedule_rounded
-                      : Icons.save_outlined,
-                ),
-                const StatusPill(
-                  'Available offline',
-                  compact: true,
-                  icon: Icons.offline_pin_outlined,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () => context.push('/inspection/${task.id}'),
-              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-              label: Text(
-                saved == null
-                    ? 'Begin check'
-                    : saved.state == DraftState.draft
-                    ? 'Continue draft'
-                    : 'View inspection',
-              ),
-            ),
-          ],
+    final template = runtime.dashboard.templateFor(task);
+    final (due, tone) = dueLabel(task.dueAt, runtime.dashboard.asOf);
+    final blocked = saved?.state == DraftState.blocked;
+    return TaskCard(
+      kind: 'Inspection',
+      title: asset.label,
+      leading: AssetBadge(asset.type, size: 52),
+      status: StateChip(
+        saved == null ? due : entryLabel(saved),
+        tone: blocked
+            ? ChipTone.caution
+            : saved == null
+            ? tone
+            : ChipTone.positive,
+        icon: saved == null ? TankMeta.calendar : TankMeta.device,
+      ),
+      details: [
+        MetaLine(TankMeta.listChecks, '${template.questions.length} items'),
+        const MetaLine(TankMeta.user, 'Assigned to you'),
+      ],
+      action: FilledButton.icon(
+        onPressed: () => context.push('/inspection/${task.id}'),
+        icon: const Icon(Symbols.arrow_forward_rounded),
+        label: Text(
+          saved == null
+              ? 'Start inspection'
+              : saved.state == DraftState.draft
+              ? 'Continue inspection'
+              : 'View inspection',
         ),
       ),
+      child: FlowSteps(steps: inspectionSteps, current: inspectionStep(saved)),
     );
   }
+
+  Widget _queueRow(
+    BuildContext context,
+    FieldRuntime runtime,
+    InspectionTask task,
+  ) {
+    final saved = runtime.outbox.forTask(task.id);
+    final asset = runtime.dashboard.assetFor(task);
+    final (due, _) = dueLabel(task.dueAt, runtime.dashboard.asOf);
+    return TankListRow(
+      leading: AssetBadge(asset.type, size: 44),
+      title: asset.label,
+      meta: [
+        MetaLine(TankMeta.calendar, due),
+        if (saved != null) MetaLine(TankMeta.device, entryLabel(saved)),
+      ],
+      onTap: () => context.push('/inspection/${task.id}'),
+    );
+  }
+}
+
+class _FacilityLine extends StatelessWidget {
+  const _FacilityLine({required this.label, required this.checks});
+  final String label;
+  final int checks;
+
+  @override
+  Widget build(BuildContext context) => LeadingRow(
+    gap: 12,
+    leading: const AccentTile(TankAccents.facility, size: 44),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          'Assigned facility · $checks ${checks == 1 ? 'check' : 'checks'} open',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    ),
+  );
 }

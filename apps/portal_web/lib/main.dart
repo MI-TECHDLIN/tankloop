@@ -12,6 +12,7 @@ import 'public_point.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerTankLoopLicenses();
   try {
     final config = PortalConfig.environment();
     if (config.mode == PortalMode.supabase) {

@@ -2,6 +2,12 @@ library;
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
+
+export 'src/artwork.dart';
+export 'src/cards.dart';
+export 'src/glyphs.dart';
+export 'src/licenses.dart';
 
 abstract final class TankColors {
   static const navy = Color(0xFF102A43);
@@ -11,6 +17,8 @@ abstract final class TankColors {
   static const canvas = Color(0xFFF6F8FA);
   static const paper = Color(0xFFF4EFE9);
   static const paperDeep = Color(0xFFE8E0D4);
+  static const record = Color(0xFFFFFCF7);
+  static const line = Color(0xFFDCE6E5);
   static const caution = Color(0xFFFFF0DF);
   static const muted = Color(0xFF526777);
   static const amber = Color(0xFF88501C);
@@ -35,7 +43,14 @@ abstract final class TankElevation {
   static const dense = 0.0;
 }
 
-const _playfair = 'PlayfairDisplay';
+/// Type families. Plus Jakarta Sans carries every interface style; Playfair
+/// Display is reserved for the `tankloop` wordmark. Package fonts need the
+/// package prefix even inside this package, or Flutter silently falls back.
+abstract final class TankType {
+  static const package = 'tankloop_design_system';
+  static const sans = 'packages/$package/PlusJakartaSans';
+  static const wordmark = 'PlayfairDisplay';
+}
 
 ThemeData tankLoopTheme() {
   final scheme = ColorScheme.fromSeed(
@@ -45,112 +60,135 @@ ThemeData tankLoopTheme() {
     surface: TankColors.canvas,
     onSurface: TankColors.navy,
   );
-  final base = ThemeData(useMaterial3: true, colorScheme: scheme);
-
-  // Display typeface: Playfair Display for headlines only (via Flutter font family)
-  final displayFont = TextStyle(
-    fontFamily: _playfair,
-    fontWeight: FontWeight.w700,
-    color: TankColors.navy,
-  );
-  final displayFontMedium = TextStyle(
-    fontFamily: _playfair,
-    fontWeight: FontWeight.w500,
-    color: TankColors.navy,
-  );
-  final displayFontLight = TextStyle(
-    fontFamily: _playfair,
-    fontWeight: FontWeight.w400,
-    color: TankColors.navy,
+  final base = ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    fontFamily: TankType.sans,
   );
 
+  // Deliberate scale: 26sp page headings, 18-20sp card titles, 15-16sp body
+  // and 12-13sp metadata. Body text uses medium weight for outdoor legibility.
+  const navy = TankColors.navy;
   return base.copyWith(
     scaffoldBackgroundColor: Colors.transparent,
+    iconTheme: const IconThemeData(
+      color: navy,
+      size: 24,
+      weight: 500,
+      opticalSize: 24,
+    ),
     textTheme: base.textTheme
-        .apply(bodyColor: TankColors.navy, displayColor: TankColors.navy)
+        .apply(bodyColor: navy, displayColor: navy)
         .copyWith(
-          displayLarge: displayFontLight.copyWith(
-            fontSize: 52,
-            height: 1.1,
-            letterSpacing: -2.0,
-            fontWeight: FontWeight.w400,
-          ),
-          displayMedium: displayFont.copyWith(
+          displayLarge: const TextStyle(
+            fontFamily: TankType.sans,
             fontSize: 40,
-            height: 1.15,
-            letterSpacing: -1.6,
-            fontWeight: FontWeight.w700,
+            height: 1.1,
+            letterSpacing: -1.2,
+            fontWeight: FontWeight.w800,
+            color: navy,
           ),
-          displaySmall: displayFontMedium.copyWith(
+          displayMedium: const TextStyle(
+            fontFamily: TankType.sans,
             fontSize: 32,
-            height: 1.2,
-            letterSpacing: -1.0,
-            fontWeight: FontWeight.w600,
+            height: 1.12,
+            letterSpacing: -.9,
+            fontWeight: FontWeight.w800,
+            color: navy,
           ),
-          headlineLarge: displayFont.copyWith(
+          displaySmall: const TextStyle(
+            fontFamily: TankType.sans,
             fontSize: 28,
-            height: 1.25,
-            letterSpacing: -.8,
-            fontWeight: FontWeight.w700,
-          ),
-          headlineMedium: displayFontMedium.copyWith(
-            fontSize: 22,
-            height: 1.3,
+            height: 1.15,
             letterSpacing: -.6,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w800,
+            color: navy,
           ),
-          headlineSmall: displayFontMedium.copyWith(
-            fontSize: 18,
-            height: 1.35,
-            fontWeight: FontWeight.w600,
+          headlineLarge: const TextStyle(
+            fontFamily: TankType.sans,
+            fontSize: 26,
+            height: 1.2,
+            letterSpacing: -.5,
+            fontWeight: FontWeight.w800,
+            color: navy,
           ),
-          titleLarge: displayFontMedium.copyWith(
+          headlineMedium: const TextStyle(
+            fontFamily: TankType.sans,
+            fontSize: 22,
+            height: 1.25,
+            letterSpacing: -.3,
+            fontWeight: FontWeight.w700,
+            color: navy,
+          ),
+          headlineSmall: const TextStyle(
+            fontFamily: TankType.sans,
             fontSize: 20,
             height: 1.3,
-            fontWeight: FontWeight.w600,
+            letterSpacing: -.2,
+            fontWeight: FontWeight.w700,
+            color: navy,
+          ),
+          titleLarge: const TextStyle(
+            fontFamily: TankType.sans,
+            fontSize: 18,
+            height: 1.3,
+            letterSpacing: -.1,
+            fontWeight: FontWeight.w700,
+            color: navy,
           ),
           titleMedium: const TextStyle(
+            fontFamily: TankType.sans,
             fontSize: 16,
-            height: 1.45,
-            fontWeight: FontWeight.w600,
-            color: TankColors.navy,
+            height: 1.4,
+            fontWeight: FontWeight.w700,
+            color: navy,
           ),
           titleSmall: const TextStyle(
+            fontFamily: TankType.sans,
             fontSize: 14,
-            height: 1.45,
-            fontWeight: FontWeight.w600,
-            color: TankColors.navy,
+            height: 1.4,
+            fontWeight: FontWeight.w700,
+            color: navy,
           ),
           bodyLarge: const TextStyle(
+            fontFamily: TankType.sans,
             fontSize: 16,
-            height: 1.55,
-            color: TankColors.navy,
+            height: 1.5,
+            fontWeight: FontWeight.w500,
+            color: navy,
           ),
           bodyMedium: const TextStyle(
+            fontFamily: TankType.sans,
             fontSize: 15,
-            height: 1.55,
-            color: TankColors.navy,
+            height: 1.5,
+            fontWeight: FontWeight.w500,
+            color: navy,
           ),
           bodySmall: const TextStyle(
+            fontFamily: TankType.sans,
             fontSize: 13,
-            height: 1.5,
+            height: 1.45,
+            fontWeight: FontWeight.w500,
             color: TankColors.muted,
           ),
           labelLarge: const TextStyle(
+            fontFamily: TankType.sans,
             fontSize: 15,
             height: 1.25,
             fontWeight: FontWeight.w700,
           ),
           labelMedium: const TextStyle(
+            fontFamily: TankType.sans,
             fontSize: 13,
-            height: 1.25,
+            height: 1.3,
             fontWeight: FontWeight.w600,
           ),
           labelSmall: const TextStyle(
-            fontSize: 11,
-            height: 1.25,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
+            fontFamily: TankType.sans,
+            fontSize: 12,
+            height: 1.3,
+            fontWeight: FontWeight.w700,
+            letterSpacing: .3,
           ),
         ),
     filledButtonTheme: FilledButtonThemeData(
@@ -158,7 +196,11 @@ ThemeData tankLoopTheme() {
         minimumSize: const Size(48, 52),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: const StadiumBorder(),
-        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+        textStyle: const TextStyle(
+          fontFamily: TankType.sans,
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+        ),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -168,14 +210,22 @@ ThemeData tankLoopTheme() {
         side: const BorderSide(color: Color(0xFFB3C9C7)),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: const StadiumBorder(),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        textStyle: const TextStyle(
+          fontFamily: TankType.sans,
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         minimumSize: const Size(48, 48),
         foregroundColor: TankColors.teal,
-        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        textStyle: const TextStyle(
+          fontFamily: TankType.sans,
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
       ),
     ),
     iconButtonTheme: IconButtonThemeData(
@@ -197,8 +247,14 @@ ThemeData tankLoopTheme() {
         borderRadius: BorderRadius.circular(20),
         borderSide: const BorderSide(color: TankColors.teal, width: 2),
       ),
-      labelStyle: const TextStyle(color: TankColors.muted),
-      hintStyle: const TextStyle(color: TankColors.muted),
+      labelStyle: const TextStyle(
+        fontFamily: TankType.sans,
+        color: TankColors.muted,
+      ),
+      hintStyle: const TextStyle(
+        fontFamily: TankType.sans,
+        color: TankColors.muted,
+      ),
     ),
     chipTheme: base.chipTheme.copyWith(
       shape: const StadiumBorder(),
@@ -206,6 +262,7 @@ ThemeData tankLoopTheme() {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       selectedColor: TankColors.mint,
       labelStyle: const TextStyle(
+        fontFamily: TankType.sans,
         color: TankColors.navy,
         fontWeight: FontWeight.w600,
       ),
@@ -236,62 +293,6 @@ class TankBackdrop extends StatelessWidget {
       ),
     ),
     child: child,
-  );
-}
-
-/// Hero card - deepest surface, reserved for the single most important block per screen
-class HeroSurface extends StatelessWidget {
-  const HeroSurface({
-    super.key,
-    required this.child,
-    this.padding = const EdgeInsets.all(28),
-    this.color,
-  });
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(TankSpace.radiusHero),
-      boxShadow: [
-        BoxShadow(
-          color: TankColors.tealDeep.withValues(alpha: .18),
-          offset: const Offset(0, 16),
-          blurRadius: 48,
-        ),
-        BoxShadow(
-          color: TankColors.navy.withValues(alpha: .08),
-          offset: const Offset(0, 6),
-          blurRadius: 20,
-        ),
-      ],
-    ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(TankSpace.radiusHero),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: color ?? TankColors.tealDeep,
-            borderRadius: BorderRadius.circular(TankSpace.radiusHero),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: .18),
-              width: 1,
-            ),
-          ),
-          child: Material(
-            type: MaterialType.transparency,
-            child: DefaultTextStyle(
-              style: const TextStyle(color: Colors.white),
-              child: child,
-            ),
-          ),
-        ),
-      ),
-    ),
   );
 }
 
@@ -346,77 +347,6 @@ class GlassCard extends StatelessWidget {
           child: Material(type: MaterialType.transparency, child: child),
         ),
       ),
-    ),
-  );
-}
-
-/// Dense card - flat surface for list rows
-class DenseCard extends StatelessWidget {
-  const DenseCard({
-    super.key,
-    required this.child,
-    this.padding = const EdgeInsets.all(16),
-    this.color,
-  });
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: padding,
-    decoration: BoxDecoration(
-      color: color ?? TankColors.paper.withValues(alpha: .7),
-      borderRadius: BorderRadius.circular(TankSpace.radiusDense),
-      border: Border.all(
-        color: TankColors.navy.withValues(alpha: .06),
-        width: 1,
-      ),
-    ),
-    child: Material(type: MaterialType.transparency, child: child),
-  );
-}
-
-/// Paper card - warm paper surface for record/print moments
-class PaperCard extends StatelessWidget {
-  const PaperCard({
-    super.key,
-    required this.child,
-    this.padding = const EdgeInsets.all(24),
-    this.radius = TankSpace.radiusStandard,
-    this.elevation = TankElevation.standard,
-  });
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-  final double radius;
-  final double elevation;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(radius),
-      boxShadow: elevation > 0
-          ? [
-              BoxShadow(
-                color: TankColors.navy.withValues(alpha: .05),
-                offset: Offset(0, elevation * 2),
-                blurRadius: elevation * 8,
-              ),
-            ]
-          : null,
-    ),
-    child: Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: TankColors.paper,
-        borderRadius: BorderRadius.circular(radius),
-        boxShadow: elevation > 0 ? null : null,
-        border: Border.all(
-          color: TankColors.navy.withValues(alpha: .05),
-          width: 1,
-        ),
-      ),
-      child: Material(type: MaterialType.transparency, child: child),
     ),
   );
 }
@@ -529,8 +459,13 @@ class TankBrand extends StatelessWidget {
   final String surface;
   final bool showSimulationBadge;
 
+  // The wordmark is a logo: it grows a little with the reader's text size but
+  // never so far that the name itself truncates.
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
+  Widget build(BuildContext context) =>
+      MediaQuery.withClampedTextScaling(maxScaleFactor: 1.25, child: _build());
+
+  Widget _build() => LayoutBuilder(
     builder: (context, constraints) {
       const iconWidth = 40.0;
       const iconGap = 12.0;
@@ -556,10 +491,13 @@ class TankBrand extends StatelessWidget {
           Text(
             'tankloop',
             style: TextStyle(
-              fontFamily: _playfair,
-              fontSize: fontSize,
+              fontFamily: TankType.wordmark,
+              package: TankType.package,
+              fontSize: fontSize + 2,
               fontWeight: FontWeight.w700,
-              letterSpacing: -.5,
+              fontVariations: const [FontVariation.weight(700)],
+              letterSpacing: -.4,
+              height: 1.1,
               color: TankColors.navy,
             ),
             overflow: TextOverflow.ellipsis,
@@ -640,7 +578,12 @@ Widget _icon() => Container(
     color: TankColors.teal,
     borderRadius: BorderRadius.circular(14),
   ),
-  child: const Icon(Icons.water_drop_rounded, color: Colors.white, size: 24),
+  child: const Icon(
+    Symbols.water_drop_rounded,
+    fill: 1,
+    color: Colors.white,
+    size: 24,
+  ),
 );
 
 /// Prominent simulation badge - designed to be visible beside the brand
@@ -802,35 +745,22 @@ class NoticeCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.message,
-    this.icon = Icons.info_outline_rounded,
+    this.icon = Symbols.info_rounded,
     this.caution = false,
     this.action,
-    this.prominent = false,
-    this.paperSurface = false,
   });
   final String title;
   final String message;
   final IconData icon;
   final bool caution;
   final Widget? action;
-  final bool prominent;
-  final bool paperSurface;
 
   @override
-  Widget build(BuildContext context) {
-    final cardChild = _buildContent();
-    if (prominent) {
-      return HeroSurface(padding: const EdgeInsets.all(20), child: cardChild);
-    }
-    if (paperSurface) {
-      return PaperCard(padding: const EdgeInsets.all(20), child: cardChild);
-    }
-    return GlassCard(
-      color: caution ? TankColors.caution.withValues(alpha: .9) : null,
-      padding: const EdgeInsets.all(20),
-      child: cardChild,
-    );
-  }
+  Widget build(BuildContext context) => GlassCard(
+    color: caution ? TankColors.caution.withValues(alpha: .9) : null,
+    padding: const EdgeInsets.all(20),
+    child: _buildContent(),
+  );
 
   Widget _buildContent() => Row(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -839,6 +769,7 @@ class NoticeCard extends StatelessWidget {
       const SizedBox(width: 12),
       Expanded(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -846,18 +777,14 @@ class NoticeCard extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
-                color: prominent ? Colors.white : TankColors.navy,
+                height: 1.35,
+                color: caution ? const Color(0xFF5C3311) : TankColors.navy,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               message,
-              style: TextStyle(
-                color: prominent
-                    ? Colors.white.withValues(alpha: .9)
-                    : TankColors.muted,
-                height: 1.5,
-              ),
+              style: const TextStyle(color: TankColors.muted, height: 1.5),
             ),
             if (action != null)
               Padding(padding: const EdgeInsets.only(top: 8), child: action!),
@@ -876,13 +803,16 @@ class SectionHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 28, bottom: 16),
+    padding: const EdgeInsets.only(top: 28, bottom: 12),
     child: Row(
       children: [
         Expanded(
-          child: Text(
-            title,
-            style: style ?? Theme.of(context).textTheme.headlineSmall,
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: style ?? Theme.of(context).textTheme.titleLarge,
+            ),
           ),
         ),
         if (trailing != null) ...[trailing!],
@@ -891,6 +821,11 @@ class SectionHeading extends StatelessWidget {
   );
 }
 
+/// The approved floating navigation: five labelled destinations with a navy
+/// pill on the current one. When the reader's text size leaves too little room
+/// for every label, the bar keeps the current label visible inside the pill
+/// and shows the others as icons with tooltips and spoken labels, instead of
+/// truncating every word.
 class FloatingNav extends StatelessWidget {
   const FloatingNav({
     super.key,
@@ -900,87 +835,68 @@ class FloatingNav extends StatelessWidget {
   });
   final int selected;
   final ValueChanged<int> onSelected;
+
+  /// The bar's full height, including its bottom safe-area inset.
   final ValueChanged<double>? onHeightMeasured;
   static const icons = [
-    Icons.today_outlined,
-    Icons.account_tree_outlined,
-    Icons.work_outline_rounded,
-    Icons.history_rounded,
-    Icons.person_outline_rounded,
+    Symbols.today_rounded,
+    Symbols.water_drop_rounded,
+    Symbols.assignment_late_rounded,
+    Symbols.history_rounded,
+    Symbols.person_rounded,
   ];
   static const labels = ['Today', 'Water', 'Cases', 'Activity', 'Profile'];
+  static const _label = TextStyle(
+    fontFamily: TankType.sans,
+    fontSize: 12,
+    height: 1.2,
+    fontWeight: FontWeight.w800,
+    letterSpacing: .1,
+  );
+  static const _iconSlot = 50.0;
+
+  /// Whether every label fits its share of [width] at the current text scale.
+  static bool labelsFit(double width, TextScaler scaler) {
+    final slot = width / labels.length;
+    return labels.every((label) {
+      final painter = TextPainter(
+        text: TextSpan(text: label, style: _label),
+        textScaler: scaler,
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+      return painter.width + 12 <= slot;
+    });
+  }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    top: false,
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-      child: Center(
-        heightFactor: 1,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: _MeasuredGlassCard(
-            onHeightMeasured: onHeightMeasured,
-            radius: 28,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            child: Row(
-              children: List.generate(
-                icons.length,
-                (index) => Expanded(
-                  child: Semantics(
-                    selected: selected == index,
-                    label: labels[index],
-                    child: Tooltip(
-                      message: labels[index],
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(24),
-                        onTap: () => onSelected(index),
-                        child: Container(
-                          constraints: const BoxConstraints(minHeight: 56),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: selected == index
-                                ? TankColors.navy
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                icons[index],
-                                color: selected == index
-                                    ? Colors.white
-                                    : TankColors.muted,
-                                size: 22,
+  Widget build(BuildContext context) => _Measured(
+    onHeightMeasured: onHeightMeasured,
+    child: SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: _NavSurface(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final scaler = MediaQuery.textScalerOf(context);
+                  final full = labelsFit(constraints.maxWidth, scaler);
+                  return Row(
+                    children: [
+                      for (var index = 0; index < icons.length; index++)
+                        full || index == selected
+                            ? Expanded(child: _item(context, index, full))
+                            : SizedBox(
+                                width: _iconSlot,
+                                child: _item(context, index, full),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                labels[index],
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: selected == index
-                                      ? Colors.white
-                                      : TankColors.muted,
-                                  fontSize: 10,
-                                  fontWeight: selected == index
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -988,47 +904,150 @@ class FloatingNav extends StatelessWidget {
       ),
     ),
   );
+
+  Widget _item(BuildContext context, int index, bool full) {
+    final active = selected == index;
+    final color = active ? Colors.white : TankColors.muted;
+    final icon = Icon(
+      icons[index],
+      color: color,
+      size: 24,
+      fill: active ? 1 : 0,
+      weight: active ? 600 : 500,
+    );
+    final label = Text(
+      labels[index],
+      maxLines: 1,
+      softWrap: false,
+      textAlign: TextAlign.center,
+      style: _label.copyWith(
+        color: color,
+        fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+      ),
+    );
+    final Widget content;
+    if (full) {
+      content = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [icon, const SizedBox(height: 3), label],
+      );
+    } else if (active) {
+      // Keep the whole word: drop the icon first, and only scale the word
+      // down when even the label alone cannot fit the remaining width.
+      content = LayoutBuilder(
+        builder: (context, constraints) {
+          final painter = TextPainter(
+            text: TextSpan(text: labels[index], style: _label),
+            textScaler: MediaQuery.textScalerOf(context),
+            textDirection: TextDirection.ltr,
+            maxLines: 1,
+          )..layout();
+          final withIcon = painter.width + 24 + 6 <= constraints.maxWidth;
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (withIcon) ...[icon, const SizedBox(width: 6)],
+              Flexible(
+                child: FittedBox(fit: BoxFit.scaleDown, child: label),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      content = icon;
+    }
+    // One node per destination: this label, the InkWell's tap action and the
+    // selected state. The visible icon and text are excluded so the label is
+    // announced once, and the tooltip only serves long-press.
+    return Semantics(
+      container: true,
+      button: true,
+      selected: active,
+      label: labels[index],
+      child: Tooltip(
+        message: labels[index],
+        excludeFromSemantics: true,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(25),
+          onTap: () => onSelected(index),
+          child: ExcludeSemantics(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              constraints: const BoxConstraints(minHeight: 56),
+              padding: EdgeInsets.symmetric(
+                vertical: full ? 8 : 10,
+                horizontal: full ? 2 : 8,
+              ),
+              decoration: BoxDecoration(
+                color: active ? TankColors.navy : Colors.transparent,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Center(heightFactor: 1, child: content),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _MeasuredGlassCard extends StatefulWidget {
-  const _MeasuredGlassCard({
-    required this.child,
-    required this.radius,
-    required this.padding,
-    this.onHeightMeasured,
-  });
+/// Reports its child's laid-out height after every layout, so a text-size or
+/// safe-area change resizes the content inset beneath the bar.
+class _Measured extends StatefulWidget {
+  const _Measured({required this.child, this.onHeightMeasured});
   final Widget child;
-  final double radius;
-  final EdgeInsetsGeometry padding;
   final ValueChanged<double>? onHeightMeasured;
 
   @override
-  State<_MeasuredGlassCard> createState() => _MeasuredGlassCardState();
+  State<_Measured> createState() => _MeasuredState();
 }
 
-class _MeasuredGlassCardState extends State<_MeasuredGlassCard> {
-  bool _measured = false;
+class _MeasuredState extends State<_Measured> {
+  double? _reported;
+
+  void _report() {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final height = renderBox?.hasSize == true ? renderBox!.size.height : null;
+    if (height == null || height == _reported) return;
+    _reported = height;
+    widget.onHeightMeasured?.call(height);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (!_measured) {
-          _measured = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final renderBox = context.findRenderObject() as RenderBox?;
-            if (renderBox != null && widget.onHeightMeasured != null) {
-              widget.onHeightMeasured!(renderBox.size.height);
-            }
-          });
-        }
-        return GlassCard(
-          radius: widget.radius,
-          padding: widget.padding,
-          child: widget.child,
-        );
-      },
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _report();
+    });
+    return widget.child;
   }
+}
+
+class _NavSurface extends StatelessWidget {
+  const _NavSurface({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(30),
+      boxShadow: [
+        BoxShadow(
+          color: TankColors.navy.withValues(alpha: .14),
+          offset: const Offset(0, 12),
+          blurRadius: 32,
+        ),
+      ],
+    ),
+    child: GlassCard(
+      radius: 30,
+      padding: const EdgeInsets.all(5),
+      elevation: 0,
+      color: Colors.white.withValues(alpha: .95),
+      child: child,
+    ),
+  );
 }
 
 /// Original vector artwork, drawn from product topology rather than stock or

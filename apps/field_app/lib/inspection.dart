@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:tankloop_localization/localization.dart';
 import 'package:tankloop_offline_sync/offline_sync.dart';
 import 'package:tankloop_shared_forms/shared_forms.dart';
+import 'plain_language.dart';
 import 'sync_status.dart';
 import 'evidence_photo.dart';
 import 'field_content.dart';
@@ -173,7 +175,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                       onPressed: saving || submitting || capturing
                           ? null
                           : () => context.go('/'),
-                      icon: const Icon(Icons.arrow_back_rounded),
+                      icon: const Icon(Symbols.arrow_back_rounded),
                     ),
                     title: const Text(
                       'Inspection',
@@ -189,7 +191,9 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                               ? 'Not yet saved'
                               : entryLabel(entry),
                           compact: true,
-                          icon: saving ? Icons.more_horiz : Icons.save_outlined,
+                          icon: saving
+                              ? Symbols.more_horiz_rounded
+                              : Symbols.save_rounded,
                         ),
                       ),
                     ],
@@ -199,40 +203,47 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 720),
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
                           child: FieldContent(
                             runtime: runtime,
                             empty: () => false,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Text(
-                                  runtime.dashboard.assetFor(task).label,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.headlineLarge,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${runtime.dashboard.facility.label} · Checklist v${template.version}',
-                                  style: const TextStyle(
-                                    color: TankColors.muted,
+                                TaskCard(
+                                  kind: 'Inspection',
+                                  title: runtime.dashboard.assetFor(task).label,
+                                  leading: AssetBadge(
+                                    runtime.dashboard.assetFor(task).type,
+                                    size: 52,
+                                  ),
+                                  details: [
+                                    MetaLine(
+                                      TankMeta.mapPin,
+                                      runtime.dashboard.facility.label,
+                                    ),
+                                    MetaLine(
+                                      TankMeta.hash,
+                                      'Checklist v${template.version}',
+                                    ),
+                                    MetaLine(
+                                      TankMeta.calendar,
+                                      'Due ${recordTime(task.dueAt)}',
+                                    ),
+                                  ],
+                                  child: FlowSteps(
+                                    steps: inspectionSteps,
+                                    current: task.isSubmitted
+                                        ? inspectionSteps.length
+                                        : inspectionStep(entry),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Due ${recordTime(task.dueAt)}',
-                                  style: const TextStyle(
-                                    color: TankColors.muted,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 16),
                                 const NoticeCard(
                                   title: 'Observe, don’t infer',
                                   message:
                                       'Inspection risk observed does not imply a test result. Unknown is a valid answer when you cannot inspect an item.',
-                                  icon: Icons.visibility_outlined,
+                                  icon: Symbols.visibility_rounded,
                                 ),
                                 const SizedBox(height: 24),
                                 if (!locked) ...[
@@ -262,8 +273,8 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                                         : entry.error ??
                                               'Your inspection is saved on this device. It remains pending until a receipt is received.',
                                     icon: entry.receipt != null
-                                        ? Icons.receipt_long_outlined
-                                        : Icons.cloud_upload_outlined,
+                                        ? Symbols.receipt_long_rounded
+                                        : Symbols.cloud_upload_rounded,
                                     caution: entry.state == DraftState.blocked,
                                   ),
                                   const SizedBox(height: 24),
@@ -367,7 +378,9 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                                     onPressed: saving || submitting || capturing
                                         ? null
                                         : () => captureEvidence(task),
-                                    icon: const Icon(Icons.camera_alt_outlined),
+                                    icon: const Icon(
+                                      Symbols.add_a_photo_rounded,
+                                    ),
                                     label: Text(
                                       evidence.isEmpty
                                           ? 'Add photo evidence'
@@ -398,7 +411,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                                     onPressed: saving || submitting || capturing
                                         ? null
                                         : () => save(task),
-                                    icon: const Icon(Icons.save_outlined),
+                                    icon: const Icon(Symbols.save_rounded),
                                     label: const Text('Save draft'),
                                   ),
                                   const SizedBox(height: 12),
@@ -411,7 +424,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                                         ? null
                                         : () => submit(task, template),
                                     icon: const Icon(
-                                      Icons.arrow_upward_rounded,
+                                      Symbols.cloud_upload_rounded,
                                     ),
                                     label: Text(
                                       submitting
