@@ -62,7 +62,7 @@ class SignInScreenState extends State<SignInScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const TankBrand(),
+                  const TankBrand(surface: 'FIELD', showSimulationBadge: false),
                   const SizedBox(height: 32),
                   Text(
                     'Keep the loop\nmoving.',

@@ -1,3 +1,4 @@
+import 'package:tankloop_portal/config.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -293,7 +294,7 @@ void main() {
     'simulation root selects a generated token and advances its dated route',
     (tester) async {
       await tester.pumpWidget(
-        const PortalApp(config: AppConfig(mode: AppMode.simulation)),
+        const PortalApp(config: PortalConfig(mode: PortalMode.simulation)),
       );
       await tester.pumpAndSettle();
       expect(

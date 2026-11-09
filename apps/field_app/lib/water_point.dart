@@ -32,73 +32,75 @@ class WaterPointScreen extends ConsumerWidget {
                 tooltip: 'Back to Today',
               ),
             ),
-            body: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                FieldContent(
-                  runtime: runtime,
-                  empty: () => point == null,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (point != null) ...[
-                        if (point.isSimulated)
-                          const SimulationNotice(compact: true),
-                        const SizedBox(height: 20),
-                        Text(
-                          point.label,
-                          style: Theme.of(context).textTheme.headlineLarge,
-                        ),
-                        const SectionHeading('Assigned checks'),
-                        if (!tasks.any((t) => !t.isSubmitted))
-                          const NoticeCard(
-                            title: 'No open checks',
-                            message:
-                                'Past records remain below. This does not imply safe water.',
+            body: RefreshIndicator(
+              onRefresh: () => runtime.refresh(),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(20),
+                children: [
+                  FieldContent(
+                    runtime: runtime,
+                    empty: () => point == null,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (point != null) ...[
+                          const SizedBox(height: 20),
+                          Text(
+                            point.label,
+                            style: Theme.of(context).textTheme.headlineLarge,
                           ),
-                        for (final task in tasks.where((t) => !t.isSubmitted))
-                          Card(
-                            child: ListTile(
+                          const SectionHeading('Assigned checks'),
+                          if (!tasks.any((t) => !t.isSubmitted))
+                            const NoticeCard(
+                              title: 'No open checks',
+                              message:
+                                  'Past records remain below. This does not imply safe water.',
+                            ),
+                          for (final task in tasks.where((t) => !t.isSubmitted))
+                            Card(
+                              child: ListTile(
+                                title: Text(
+                                  'Inspection due ${recordDate(task.dueAt)}',
+                                ),
+                                subtitle: Text(
+                                  runtime.outbox.forTask(task.id) == null
+                                      ? 'Scheduled'
+                                      : entryLabel(
+                                          runtime.outbox.forTask(task.id)!,
+                                        ),
+                                ),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () =>
+                                    context.push('/inspection/${task.id}'),
+                              ),
+                            ),
+                          const SectionHeading('Inspection history'),
+                          for (final task in tasks.where((t) => t.isSubmitted))
+                            ListTile(
                               title: Text(
-                                'Inspection due ${recordDate(task.dueAt)}',
+                                'Received ${recordTime(task.submittedAt!)}',
                               ),
                               subtitle: Text(
-                                runtime.outbox.forTask(task.id) == null
-                                    ? 'Scheduled'
-                                    : entryLabel(
-                                        runtime.outbox.forTask(task.id)!,
-                                      ),
+                                'Checklist v${runtime.dashboard.templateFor(task).version} - observed risks, not a laboratory finding',
                               ),
-                              trailing: const Icon(Icons.chevron_right),
-                              onTap: () =>
-                                  context.push('/inspection/${task.id}'),
                             ),
-                          ),
-                        const SectionHeading('Inspection history'),
-                        for (final task in tasks.where((t) => t.isSubmitted))
-                          ListTile(
-                            title: Text(
-                              'Received ${recordTime(task.submittedAt!)}',
+                          if (!tasks.any((t) => t.isSubmitted))
+                            const Text('No inspection history recorded.'),
+                          const SectionHeading('Concern history'),
+                          for (final item in runtime.dashboard.cases.where(
+                            (c) => c.pointLabel == point.label,
+                          ))
+                            ListTile(
+                              title: Text(humanState(item.state.name)),
+                              subtitle: Text(recordTime(item.reportedAt)),
                             ),
-                            subtitle: Text(
-                              'Checklist v${runtime.dashboard.templateFor(task).version} - observed risks, not a laboratory finding',
-                            ),
-                          ),
-                        if (!tasks.any((t) => t.isSubmitted))
-                          const Text('No inspection history recorded.'),
-                        const SectionHeading('Concern history'),
-                        for (final item in runtime.dashboard.cases.where(
-                          (c) => c.pointLabel == point.label,
-                        ))
-                          ListTile(
-                            title: Text(humanState(item.state.name)),
-                            subtitle: Text(recordTime(item.reportedAt)),
-                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

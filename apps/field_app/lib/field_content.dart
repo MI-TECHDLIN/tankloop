@@ -35,7 +35,7 @@ class FieldContent extends StatelessWidget {
               'Ask your manager to renew access. Local drafts are retained for this account.',
         );
       }
-      if (loading || runtime.refreshing) return const FieldLoadingSkeleton();
+      if (loading) return const FieldLoadingSkeleton();
       final failure = error ?? runtime.error;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

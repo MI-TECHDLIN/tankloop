@@ -20,11 +20,9 @@ class WaterPointsScreen extends ConsumerWidget {
       builder: (context, _) => FieldContent(
         runtime: runtime,
         empty: () => runtime.dashboard.points.isEmpty,
-        child: Builder(
-          builder: (context) => Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: _content(context, runtime),
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: _content(context, runtime),
         ),
       ),
     );
@@ -127,29 +125,6 @@ class WaterPointsScreen extends ConsumerWidget {
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),
-                  if (point.isSimulated)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: TankColors.navy.withValues(alpha: .08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: TankColors.navy.withValues(alpha: .15),
-                        ),
-                      ),
-                      child: Text(
-                        'SIMULATED',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: TankColors.teal,
-                        ),
-                      ),
-                    ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -177,17 +152,6 @@ class WaterPointsScreen extends ConsumerWidget {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (point.isSimulated)
-                                  const Padding(
-                                    padding: EdgeInsets.only(bottom: 12),
-                                    child: Text(
-                                      'SIMULATED POINT',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: TankColors.teal,
-                                      ),
-                                    ),
-                                  ),
                                 QrImageView(
                                   data: runtime.publicUrl(token),
                                   size: 240,

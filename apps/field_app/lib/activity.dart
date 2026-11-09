@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_localization/localization.dart';
 import 'package:tankloop_offline_sync/offline_sync.dart';
@@ -26,11 +25,9 @@ class ActivityScreen extends ConsumerWidget {
         empty: () =>
             runtime.outbox.entries.isEmpty &&
             !runtime.dashboard.inspections.any((t) => t.isSubmitted),
-        child: Builder(
-          builder: (context) => Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: _content(context, runtime),
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: _content(context, runtime),
         ),
       ),
     );
@@ -150,7 +147,7 @@ class ActivityScreen extends ConsumerWidget {
               Text('Observed ${recordTime(entry.command.observedAt)}'),
               if (entry.receipt != null)
                 Text(
-                  '${runtime.config.mode == AppMode.simulation ? 'Simulated receipt' : 'Server received'} ${recordTime(entry.receipt!.receivedAt)}',
+                  'Server received ${recordTime(entry.receipt!.receivedAt)}',
                   style: const TextStyle(color: TankColors.muted),
                 ),
               if (entry.error != null)

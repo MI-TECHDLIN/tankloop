@@ -1,3 +1,4 @@
+import '../../data/test/support/fixture_repository.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -78,14 +79,14 @@ class DelayedReceiptRepository extends FlakyRepository {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  late SimulationRepository repository;
+  late FixtureRepository repository;
   late DashboardSnapshot dashboard;
   late InspectionTask task;
   late ChecklistTemplate template;
   late MemoryKeyValueStore storage;
   late InspectionOutbox outbox;
   setUp(() async {
-    repository = SimulationRepository();
+    repository = FixtureRepository();
     dashboard = await repository.today();
     task = dashboard.inspections.firstWhere((t) => !t.isSubmitted);
     template = dashboard.templateFor(task);

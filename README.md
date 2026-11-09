@@ -210,15 +210,15 @@ Run each app in its own terminal:
 (cd apps/portal_web && flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8081)
 ```
 
-Open [Field](http://127.0.0.1:8080) and [Verify](http://127.0.0.1:8081). Both start with deterministic simulation seed `20261101`, day `10`. No account or backend is required for this mode. For Android, run `flutter run` from `apps/field_app` with an emulator or device connected.
+Field requires `SUPABASE_URL` and `SUPABASE_ANON_KEY`, a signed-in account, and an active facility membership. It uses only the live Supabase runtime and does not display synthetic records. Follow [local backend setup](docs/development.md#local-supabase) and pass the configuration file when running Field:
 
-1. In Field, open **Start inspection**, answer the versioned checklist and save a draft.
-2. Reload. The draft, answers and visit notes are retained on the device.
-3. Use **Profile > Pause sync**, complete the check and **Queue inspection**. Reload again, then use **Activity > Sync queued inspections** to receive a durable acknowledgement. Pause sync is a session-local exercise control.
-4. Use **Cases** to inspect the generated response history and **Profile > Advance 1 day** to progress scheduled inspections, sample results and guarded case transitions.
-5. Open Verify for a dated public point record. **Water > Copy public QR link** selects a point; **Advance 1 day** and **Text-first view** are also available in Verify.
+```sh
+(cd apps/field_app && flutter run --dart-define-from-file=/absolute/path/to/tankloop/.env)
+```
 
-Simulation instances reproduce the same baseline but do not share custom Field submissions. **Supabase mode shares Field submissions with the public page**. Follow [local backend setup](docs/development.md#local-supabase) for that path.
+Pull down from the top of any Field tab to reload assignments. Drafts and queued work stay on the device across restarts; **Profile > Pause sync** pauses uploads until resumed. The generated local seed contains no real water observations, so Field shows empty states rather than fixture results. Legacy exercise caches are withheld offline and exercise drafts are archived locally without uploading them as field work.
+
+[Verify](http://127.0.0.1:8081) retains its standalone deterministic simulation with seed `20261101`, day `10`. No account or backend is required for that Portal mode. Connected Portal and Field use the same backend, with provenance retained on Portal exercise records.
 
 Open [Lab](http://127.0.0.1:8081/#/lab) for generated sample, custody and result playback. Connected intake, authorized attestation and immutable corrections use a scoped Lab account and Supabase RPCs; see the [Lab workflow guide](docs/lab-portal.md).
 

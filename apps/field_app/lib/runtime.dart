@@ -46,14 +46,14 @@ class FieldRuntime extends ChangeNotifier {
     TankLoopRepository? repository,
     String? userId,
   }) async {
-    final simulation = config.mode == AppMode.simulation;
     final repo =
         repository ??
-        (simulation
-            ? SimulationRepository(seed: config.seed, day: config.day)
-            : SupabaseTankLoopRepository(Supabase.instance.client));
-    final identity = simulation
-        ? 'simulation:${config.seed}:${config.day}'
+        SupabaseTankLoopRepository(
+          Supabase.instance.client,
+          includeSimulated: false,
+        );
+    final identity = repository != null
+        ? '${config.supabaseUrl}:${userId ?? 'test-user'}'
         : '${config.supabaseUrl}:${userId ?? Supabase.instance.client.auth.currentUser!.id}';
     DashboardSnapshot dashboard;
     var stale = false;
@@ -70,9 +70,14 @@ class FieldRuntime extends ChangeNotifier {
       }
       final cached = await store.read('dashboard:$identity');
       if (cached == null) rethrow;
-      dashboard = DashboardSnapshot.fromJson(
-        jsonDecode(cached) as Map<String, dynamic>,
-      );
+      final document = jsonDecode(cached) as Map<String, dynamic>;
+      if (_containsGeneratedRecords(document)) {
+        throw const RepositoryFailure(
+          FailureKind.transient,
+          'Connect to load current assignments. Previous exercise records are not available in Field; saved drafts are retained on this device.',
+        );
+      }
+      dashboard = DashboardSnapshot.fromJson(document);
       stale = true;
     }
     final outbox = InspectionOutbox(
@@ -80,39 +85,15 @@ class FieldRuntime extends ChangeNotifier {
       namespace: '$identity:${dashboard.actorId}',
       scope: dashboard.scope,
     );
+    await _quarantineGeneratedEntries(store, outbox.storageKey);
     await outbox.load();
     final workOutbox = WorkOrderOutbox(
       store: store,
       namespace: '$identity:${dashboard.actorId}',
       scope: dashboard.scope,
     );
+    await _quarantineGeneratedEntries(store, workOutbox.storageKey);
     await workOutbox.load();
-    if (repo is SimulationRepository) {
-      final delivered = outbox.entries.where((e) => e.receipt != null).toList()
-        ..sort(
-          (a, b) => a.receipt!.receivedAt.compareTo(b.receipt!.receivedAt),
-        );
-      for (final entry in delivered) {
-        if (entry.receipt!.receivedAt.isAfter(repo.engine.now)) {
-          repo.engine.advanceTo(entry.receipt!.receivedAt);
-        }
-        await repo.submitInspection(entry.command);
-      }
-      for (final draft
-          in workOutbox.entries.where((e) => e.receipt != null).toList()..sort(
-            (a, b) => a.receipt!.receivedAt.compareTo(b.receipt!.receivedAt),
-          )) {
-        if (draft.receipt!.receivedAt.isAfter(repo.engine.now)) {
-          repo.engine.advanceTo(draft.receipt!.receivedAt);
-        }
-        await repo.submitWorkStep(draft.command);
-      }
-      final clock = await store.read('clock:$identity');
-      if (clock != null && DateTime.parse(clock).isAfter(repo.engine.now)) {
-        repo.engine.advanceTo(DateTime.parse(clock));
-      }
-      dashboard = await repo.today();
-    }
     return FieldRuntime._(
       config: config,
       store: store,
@@ -122,6 +103,48 @@ class FieldRuntime extends ChangeNotifier {
       workOutbox: workOutbox,
       identity: identity,
       stale: stale,
+    );
+  }
+
+  static bool _containsGeneratedRecords(Object? value) => switch (value) {
+    Map() =>
+      value['is_simulated'] == true ||
+          value.values.any(_containsGeneratedRecords),
+    List() => value.any(_containsGeneratedRecords),
+    _ => false,
+  };
+
+  // Preserve old exercise drafts without rendering or uploading them as field work.
+  static Future<void> _quarantineGeneratedEntries(
+    KeyValueStore store,
+    String key,
+  ) async {
+    final saved = await store.read(key);
+    if (saved == null) return;
+    final document = jsonDecode(saved) as Map<String, dynamic>;
+    if (document['version'] != 1) return;
+    final entries = document['entries'] as List;
+    if (!entries.any(_containsGeneratedRecords)) return;
+    final archiveKey = 'quarantined:$key';
+    final archived = await store.read(archiveKey);
+    final previous = archived == null
+        ? <dynamic>[]
+        : (jsonDecode(archived) as Map<String, dynamic>)['entries'] as List;
+    await store.write(
+      archiveKey,
+      jsonEncode({
+        ...document,
+        'entries': [...previous, ...entries.where(_containsGeneratedRecords)],
+      }),
+    );
+    await store.write(
+      key,
+      jsonEncode({
+        ...document,
+        'entries': entries
+            .where((entry) => !_containsGeneratedRecords(entry))
+            .toList(),
+      }),
     );
   }
 
@@ -174,20 +197,8 @@ class FieldRuntime extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> advanceDay() async {
-    final repo = repository;
-    if (repo is! SimulationRepository) return;
-    repo.engine.advance(const Duration(days: 1));
-    await store.write('clock:$identity', repo.engine.now.toIso8601String());
-    await refresh();
-  }
-
   String publicUrl(String token) {
-    final repo = repository;
-    final query = repo is SimulationRepository
-        ? '?seed=${repo.engine.seed}&day=${repo.engine.now.difference(repo.engine.startsAt).inDays}'
-        : '';
-    return '${config.portalBaseUrl.replaceFirst(RegExp(r'/$'), '')}/#/point/$token$query';
+    return '${config.portalBaseUrl.replaceFirst(RegExp(r'/$'), '')}/#/point/$token';
   }
 
   Future<void> resume() async {
@@ -198,7 +209,7 @@ class FieldRuntime extends ChangeNotifier {
           'A camera capture needs recovery. Keep this account signed in and retry.';
       notifyListeners();
     }
-    if (config.mode == AppMode.supabase && !syncPaused) await sync();
+    if (!syncPaused) await sync();
   }
 
   @override
@@ -212,8 +223,9 @@ class FieldRuntime extends ChangeNotifier {
     accessRevoked = true;
     await outbox.clear();
     await workOutbox.clear();
+    await store.remove('quarantined:${outbox.storageKey}');
+    await store.remove('quarantined:${workOutbox.storageKey}');
     await store.remove(cacheKey);
-    await store.remove('clock:$identity');
     await store.remove(photoCapture.key);
   }
 }

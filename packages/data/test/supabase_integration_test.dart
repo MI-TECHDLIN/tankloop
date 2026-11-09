@@ -37,6 +37,22 @@ void main() {
       final field = SupabaseTankLoopRepository(fieldClient);
       final public = SupabaseTankLoopRepository(publicClient);
       final dashboard = await field.today();
+      // Field connects to the same membership but never presents seed rows as observations.
+      final beforeLiveRead = DateTime.now().toUtc();
+      final live = await SupabaseTankLoopRepository(
+        fieldClient,
+        includeSimulated: false,
+      ).today();
+      expect(live.facility.id, dashboard.facility.id);
+      expect(live.actorId, dashboard.actorId);
+      expect(live.assets, isEmpty);
+      expect(live.points, isEmpty);
+      expect(live.templates, isEmpty);
+      expect(live.inspections, isEmpty);
+      expect(live.cases, isEmpty);
+      expect(live.workOrders, isEmpty);
+      expect(live.publicTokens, isEmpty);
+      expect(live.asOf.isBefore(beforeLiveRead), isFalse);
       expect(dashboard.facility.isSimulated, isTrue);
       expect(dashboard.actorId, fieldClient.auth.currentUser!.id);
       expect(dashboard.assets, isNotEmpty);

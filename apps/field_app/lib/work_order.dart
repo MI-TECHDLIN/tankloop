@@ -36,9 +36,7 @@ class _WorkOrderScreenState extends ConsumerState<WorkOrderScreen> {
       order: order,
       actorId: runtime.dashboard.actorId,
       notes: notes.text,
-      observedAt: order.isSimulated
-          ? runtime.dashboard.asOf
-          : DateTime.now().toUtc(),
+      observedAt: DateTime.now().toUtc(),
       evidence: photos,
     );
   }
@@ -99,147 +97,150 @@ class _WorkOrderScreenState extends ConsumerState<WorkOrderScreen> {
                 tooltip: 'Back to Today',
               ),
             ),
-            body: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                FieldContent(
-                  runtime: runtime,
-                  empty: () => order == null,
-                  error: error,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (order != null) ...[
-                        if (order.isSimulated)
-                          const SimulationNotice(compact: true),
-                        const SizedBox(height: 20),
-                        Text(
-                          order.task,
-                          style: Theme.of(context).textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Recorded state: ${wireName(order.state).replaceAll('_', ' ')}',
-                        ),
-                        const SizedBox(height: 16),
-                        const NoticeCard(
-                          title: 'Repair is not resolution',
-                          message:
-                              'Recording this action does not close the concern. Manager review and any required follow-up remain separate.',
-                        ),
-                        if (draft != null) ...[
+            body: RefreshIndicator(
+              onRefresh: () => runtime.refresh(),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(20),
+                children: [
+                  FieldContent(
+                    runtime: runtime,
+                    empty: () => order == null,
+                    error: error,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (order != null) ...[
+                          const SizedBox(height: 20),
+                          Text(
+                            order.task,
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Recorded state: ${wireName(order.state).replaceAll('_', ' ')}',
+                          ),
                           const SizedBox(height: 16),
-                          NoticeCard(
-                            title: draft.error == null
-                                ? draftLabel(draft.state)
-                                : 'Sync failed',
+                          const NoticeCard(
+                            title: 'Repair is not resolution',
                             message:
-                                draft.error ??
-                                (draft.receipt == null
-                                    ? 'Saved on this device. A server receipt confirms delivery.'
-                                    : 'Server acknowledged version ${draft.receipt!.version}.'),
-                            caution: draft.error != null,
+                                'Recording this action does not close the concern. Manager review and any required follow-up remain separate.',
                           ),
-                        ],
-                        const SizedBox(height: 20),
-                        TextField(
-                          controller: notes,
-                          readOnly: locked || busy,
-                          maxLines: 4,
-                          maxLength: 4000,
-                          decoration: const InputDecoration(
-                            labelText: 'Action notes',
-                          ),
-                          onChanged: (_) => unawaited(
-                            save(order).catchError((Object _) {
-                              if (mounted) {
-                                setState(
-                                  () => error =
-                                      'Could not save. Keep this screen open and retry.',
-                                );
-                              }
-                            }),
-                          ),
-                        ),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final photo in photos)
-                              EvidencePhoto(
-                                key: ValueKey(photo.id),
-                                photo: photo,
-                                photos: runtime.workOutbox.photos,
-                              ),
+                          if (draft != null) ...[
+                            const SizedBox(height: 16),
+                            NoticeCard(
+                              title: draft.error == null
+                                  ? draftLabel(draft.state)
+                                  : 'Sync failed',
+                              message:
+                                  draft.error ??
+                                  (draft.receipt == null
+                                      ? 'Saved on this device. A server receipt confirms delivery.'
+                                      : 'Server acknowledged version ${draft.receipt!.version}.'),
+                              caution: draft.error != null,
+                            ),
                           ],
-                        ),
-                        if (!locked) ...[
-                          OutlinedButton.icon(
-                            onPressed: busy
-                                ? null
-                                : () => perform(() async {
-                                    await save(order);
-                                    await runtime.photoCapture.capture(
-                                      id: order.id,
-                                      workOrder: true,
-                                    );
-                                    photos = [
-                                      ...runtime.workOutbox
-                                          .forOrder(order)!
-                                          .command
-                                          .evidence,
-                                    ];
-                                  }),
-                            icon: const Icon(Icons.camera_alt_outlined),
-                            label: const Text('Add step photo'),
-                          ),
-                          OutlinedButton(
-                            onPressed: busy
-                                ? null
-                                : () => perform(() => save(order)),
-                            child: const Text('Save work draft'),
-                          ),
-                          FilledButton(
-                            onPressed: busy
-                                ? null
-                                : () => perform(() async {
-                                    await save(order);
-                                    await runtime.workOutbox.enqueue(order);
-                                    await runtime.sync();
-                                  }),
-                            child: Text(
-                              order.state == WorkOrderState.inProgress
-                                  ? 'Record completion'
-                                  : 'Record work started',
+                          const SizedBox(height: 20),
+                          TextField(
+                            controller: notes,
+                            readOnly: locked || busy,
+                            maxLines: 4,
+                            maxLength: 4000,
+                            decoration: const InputDecoration(
+                              labelText: 'Action notes',
+                            ),
+                            onChanged: (_) => unawaited(
+                              save(order).catchError((Object _) {
+                                if (mounted) {
+                                  setState(
+                                    () => error =
+                                        'Could not save. Keep this screen open and retry.',
+                                  );
+                                }
+                              }),
                             ),
                           ),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final photo in photos)
+                                EvidencePhoto(
+                                  key: ValueKey(photo.id),
+                                  photo: photo,
+                                  photos: runtime.workOutbox.photos,
+                                ),
+                            ],
+                          ),
+                          if (!locked) ...[
+                            OutlinedButton.icon(
+                              onPressed: busy
+                                  ? null
+                                  : () => perform(() async {
+                                      await save(order);
+                                      await runtime.photoCapture.capture(
+                                        id: order.id,
+                                        workOrder: true,
+                                      );
+                                      photos = [
+                                        ...runtime.workOutbox
+                                            .forOrder(order)!
+                                            .command
+                                            .evidence,
+                                      ];
+                                    }),
+                              icon: const Icon(Icons.camera_alt_outlined),
+                              label: const Text('Add step photo'),
+                            ),
+                            OutlinedButton(
+                              onPressed: busy
+                                  ? null
+                                  : () => perform(() => save(order)),
+                              child: const Text('Save work draft'),
+                            ),
+                            FilledButton(
+                              onPressed: busy
+                                  ? null
+                                  : () => perform(() async {
+                                      await save(order);
+                                      await runtime.workOutbox.enqueue(order);
+                                      await runtime.sync();
+                                    }),
+                              child: Text(
+                                order.state == WorkOrderState.inProgress
+                                    ? 'Record completion'
+                                    : 'Record work started',
+                              ),
+                            ),
+                          ],
+                          if (draft != null &&
+                              draft.state == DraftState.pending)
+                            TextButton(
+                              onPressed: busy
+                                  ? null
+                                  : () => perform(runtime.sync),
+                              child: const Text('Retry sync'),
+                            ),
+                          const SectionHeading('Step history on this device'),
+                          for (final entry in runtime.workOutbox.entries.where(
+                            (e) => e.command.orderId == order.id,
+                          ))
+                            ListTile(
+                              title: Text(
+                                wireName(
+                                  entry.command.target,
+                                ).replaceAll('_', ' '),
+                              ),
+                              subtitle: Text(
+                                '${draftLabel(entry.state)} · ${entry.command.evidence.length} photos',
+                              ),
+                            ),
                         ],
-                        if (draft != null && draft.state == DraftState.pending)
-                          TextButton(
-                            onPressed: busy
-                                ? null
-                                : () => perform(runtime.sync),
-                            child: const Text('Retry sync'),
-                          ),
-                        const SectionHeading('Step history on this device'),
-                        for (final entry in runtime.workOutbox.entries.where(
-                          (e) => e.command.orderId == order.id,
-                        ))
-                          ListTile(
-                            title: Text(
-                              wireName(
-                                entry.command.target,
-                              ).replaceAll('_', ' '),
-                            ),
-                            subtitle: Text(
-                              '${draftLabel(entry.state)} · ${entry.command.evidence.length} photos',
-                            ),
-                          ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
