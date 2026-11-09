@@ -15,6 +15,7 @@ In decentralized water systems, information can be fragmented across paper, mess
 ### Five product surfaces
 
 - **TankLoop Field:** Flutter Android experience for inspections, sample capture, assigned work, evidence, and QR scanning.
+  Its [Prepare handover assistant](docs/handover.md) uses Groq to select source-linked record facts for an editable, explicitly reviewed private draft. Server configuration is required; it cannot publish, attest results or close cases.
 - **TankLoop Manage:** responsive workspace for facility managers and administrators to review facilities, incidents, approvals, and reports.
 - **TankLoop Verify:** low-data public portal for dated water-point records, open concerns, and resident feedback.
 - **TankLoop Lab:** specialist workflow for sample intake, result attestation, evidence review, and corrections.

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'handover/handover.dart';
 import 'photo_capture.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -227,5 +228,8 @@ class FieldRuntime extends ChangeNotifier {
     await store.remove('quarantined:${workOutbox.storageKey}');
     await store.remove(cacheKey);
     await store.remove(photoCapture.key);
+    await store.remove(
+      handoverStorageKey(identity, dashboard.scope.facilityId),
+    );
   }
 }

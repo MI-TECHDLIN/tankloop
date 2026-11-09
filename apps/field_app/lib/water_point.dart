@@ -10,6 +10,7 @@ import 'plain_language.dart';
 import 'point_record_card.dart';
 import 'runtime.dart';
 import 'sync_status.dart';
+import 'handover/handover_page.dart';
 
 class WaterPointScreen extends ConsumerWidget {
   const WaterPointScreen({super.key, required this.pointId});
@@ -57,6 +58,12 @@ class WaterPointScreen extends ConsumerWidget {
                           PointRecordCard(
                             point: point,
                             dashboard: runtime.dashboard,
+                          ),
+                          const SizedBox(height: 12),
+                          PrepareHandoverButton(
+                            kind: 'point',
+                            id: point.id,
+                            label: point.label,
                           ),
                           const SectionHeading('Assigned checks'),
                           if (!tasks.any((t) => !t.isSubmitted))

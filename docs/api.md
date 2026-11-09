@@ -1,6 +1,6 @@
 # RPC API
 
-Supabase exposes these functions under `/rest/v1/rpc/<function>`. Use the publishable/anon key and, for commands, the signed-in user's bearer session. SQL in `supabase/migrations/` is the authoritative signature and authorization contract. Edge Functions are not required for this slice.
+Supabase exposes these functions under `/rest/v1/rpc/<function>`. Use the publishable/anon key and, for commands, the signed-in user's bearer session. SQL in `supabase/migrations/` is the authoritative signature and authorization contract. The read-only [handover assistant](handover.md) additionally uses the authenticated `prepare-handover` Edge Function.
 
 ## Application path
 

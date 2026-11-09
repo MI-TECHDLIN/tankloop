@@ -5,6 +5,7 @@ import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:tankloop_localization/localization.dart';
 import 'runtime.dart';
+import 'handover/handover_page.dart';
 
 import 'field_content.dart';
 import 'plain_language.dart';
@@ -157,6 +158,12 @@ class _CaseCard extends StatelessWidget {
                 ],
               ),
             ),
+          const SizedBox(height: 12),
+          PrepareHandoverButton(
+            kind: 'incident',
+            id: item.id,
+            label: item.pointLabel,
+          ),
           Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(

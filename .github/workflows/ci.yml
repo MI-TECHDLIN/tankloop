@@ -13,6 +13,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  handover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.5.6
+      - run: deno fmt --check supabase/functions/prepare-handover
+      - run: deno lint supabase/functions/prepare-handover
+      - run: deno check supabase/functions/prepare-handover/index.ts
+      - name: Handover evidence, authority and HTTP endpoint tests (provider doubles)
+        run: deno test --allow-net=127.0.0.1 supabase/functions/prepare-handover
+
   flutter:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -42,6 +56,15 @@ jobs:
       - name: Field interaction and recovery tests
         working-directory: apps/field_app
         run: flutter test --no-pub --reporter expanded
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.5.6
+      - name: Field SDK to local handover function (upstream HTTP doubles)
+        working-directory: apps/field_app
+        env:
+          TANKLOOP_DENO_BIN: deno
+          TANKLOOP_HANDOVER_TEST_SERVER: ${{ github.workspace }}/supabase/functions/prepare-handover/test_server.ts
+        run: flutter test --no-pub test/handover_endpoint_test.dart --reporter expanded
       - name: Public record, laboratory states and responsive interaction tests
         working-directory: apps/portal_web
         run: flutter test --no-pub --reporter expanded
