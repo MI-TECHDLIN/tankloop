@@ -32,11 +32,37 @@ class TodayScreen extends ConsumerWidget {
           header: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              PageHeader(
-                eyebrow: 'Today · ${dayGreeting(runtime.dashboard.asOf)}',
-                eyebrowIcon: TankMeta.calendar,
-                lead: tasks.isEmpty ? 'All caught ' : 'Your next ',
-                emphasis: tasks.isEmpty ? 'up.' : 'check.',
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Eyebrow(
+                          'Today · ${dayGreeting(runtime.dashboard.asOf)}',
+                          icon: TankMeta.calendar,
+                        ),
+                        const SizedBox(height: 20),
+                        TwoToneHeading(
+                          tasks.isEmpty ? 'All caught ' : 'Your next ',
+                          tasks.isEmpty ? 'up.' : 'check.',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton.filled(
+                    tooltip: 'Scan water point QR',
+                    style: IconButton.styleFrom(
+                      backgroundColor: TankColors.navy,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(48, 48),
+                    ),
+                    onPressed: () => context.push('/scan'),
+                    icon: const Icon(Symbols.qr_code_scanner_rounded),
+                  ),
+                ],
               ),
               const SizedBox(height: 18),
               _FacilityLine(

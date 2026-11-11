@@ -28,3 +28,5 @@ inspiration/
 # One workspace lockfile is committed at the root.
 apps/*/pubspec.lock
 packages/*/pubspec.lock
+# Widget Preview related
+.widget_preview/

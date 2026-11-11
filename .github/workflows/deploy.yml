@@ -1,0 +1,45 @@
+name: Deploy Web to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-cloudflare
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build Web for Production
+        working-directory: apps/portal_web
+        run: |
+          flutter build web --release --no-pub \
+            --dart-define=TANKLOOP_MODE=supabase \
+            --dart-define=SUPABASE_URL=https://cgantplwxnouuhymklqs.supabase.co \
+            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnYW50cGx3eG5vdXVoeW1rbHFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0MTI2NjksImV4cCI6MjEwOTk4ODY2OX0.j9aJ4zbdgjcJngUxbxOLKlRbq4ZAtbXnlcN_Ugs7tIU \
+            --dart-define=PORTAL_BASE_URL=https://tankloop.pages.dev
+          cp web/_redirects build/web/
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/portal_web/build/web --project-name=tankloop

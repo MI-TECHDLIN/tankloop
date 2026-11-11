@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'runtime.dart';
 import 'today.dart';
@@ -68,39 +66,11 @@ class _FieldHomeState extends ConsumerState<FieldHome> {
                           TankSpace.screen,
                           effectiveNavHeight,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TankBrand(
-                                    surface: 'FIELD',
-                                    showSimulationBadge: false,
-                                  ),
-                                ),
-                                IconButton.filled(
-                                  tooltip: 'Scan water point QR',
-                                  style: IconButton.styleFrom(
-                                    backgroundColor: TankColors.navy,
-                                    foregroundColor: Colors.white,
-                                    minimumSize: const Size(48, 48),
-                                  ),
-                                  onPressed: () => context.push('/scan'),
-                                  icon: const Icon(
-                                    Symbols.qr_code_scanner_rounded,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              switchInCurve: Curves.easeOutCubic,
-                              switchOutCurve: Curves.easeInCubic,
-                              child: _screenFor(selected),
-                            ),
-                          ],
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          child: _screenFor(selected),
                         ),
                       ),
                     ),
