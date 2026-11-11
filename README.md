@@ -1,234 +1,134 @@
 # TankLoop
 
-## From a water concern to an accountable response
+**TankLoop helps water facilities record concerns, assign someone accountable, verify the fix actually happened, and publish an honest public record - without pretending software can test water or declare it safe.**
 
-TankLoop is a water-quality operations and transparency platform for the **Xylem Global Student Innovation Challenge 2026**, Water Quality track. It helps facilities record concerns, assign accountable action, preserve evidence, verify follow-up, and communicate a dated public status.
+Built for the [Xylem Global Student Innovation Challenge 2026](docs/submission/), Water Quality track.
 
-<!-- Blueprint p.3–4: TankLoop is an accountability layer, not a sensor or laboratory. -->
+<!-- Live links: portal auto-deploys from main; APK attached to the latest release. -->
 
-In decentralized water systems, information can be fragmented across paper, messaging apps, staff memory, and laboratory reports. A concern may be noticed without a clear owner, a repair may be completed without documented verification, or residents may receive a status without enough context. TankLoop is designed to connect those handoffs.
+## Try it live
 
-> **Important:** TankLoop does not sense contamination, replace qualified sampling or testing, provide treatment instructions, or declare water “safe.” All data used in demonstrations is simulated and must be visibly labeled as simulated.
+| Surface | Link | What it does |
+|---|---|---|
+| **Portal (web)** | https://tankloop.pages.dev | Verify public records, manage facilities, review lab results - one app, role-based views |
+| **Field (Android)** | [Latest release APK](https://github.com/MI-TECHDLIN/tankloop/releases/latest) | Offline-first inspections, sample capture, QR scanning for field staff |
+| **Public verify** | https://tankloop.pages.dev/#/point/&lt;token&gt; | Dated water-point record via QR - no account needed |
 
-## What TankLoop includes
+The portal deploys automatically on every push to `main`. The Android APK is attached to each GitHub release.
 
-### Five product surfaces
+## The problem
 
-- **TankLoop Field:** Flutter Android experience for inspections, sample capture, assigned work, evidence, and QR scanning.
-- **TankLoop Manage:** responsive workspace for facility managers and administrators to review facilities, incidents, approvals, and reports.
-- **TankLoop Verify:** low-data public portal for dated water-point records, open concerns, and resident feedback.
-- **TankLoop Lab:** specialist workflow for sample intake, result attestation, evidence review, and corrections.
-- **TankLoop Control:** governance tools for onboarding, roles, audit access, and safety controls.
+In facilities that depend on decentralized water systems, information lives in fragments: paper logbooks, WhatsApp messages, staff memory, lab PDFs. The result:
 
-### Seven connected modules
+- a leak or contamination concern gets noticed but nobody owns it;
+- a repair gets marked "done" with no proof anyone checked;
+- residents hear "it's fine" with no date, no evidence, and no way to verify.
 
-1. Facility and water-network registry
-2. Inspections and scheduled maintenance
-3. Sampling, custody, and laboratory records
-4. Incidents, work orders, and verification
-5. Public water records
-6. Communication and escalation
-7. Reporting, administration, and support
+TankLoop is an **accountability layer** - it connects those handoffs so every claim has an owner, a timestamp, and evidence behind it.
 
-The planned demonstration follows one coherent spine: **inspection → sample → lab result → incident → fix → verified follow-up → public QR record**. Demonstration records are synthetic workflow fixtures, not evidence that real water was tested.
+## How it works
 
-## Trust guardrails
+One workflow, five steps:
 
-TankLoop keeps evidence source, verification stage, operational concern, and freshness distinct. It is designed so that:
+1. **Inspect** - a field worker logs an observation on a water asset (offline-capable, syncs later)
+2. **Sample** - a collector registers a sample; every handoff is a custody event
+3. **Review** - an authorized lab records whether the sample was valid and publishes results with full provenance
+4. **Respond** - a manager triages the incident, assigns an owner, tracks corrective work
+5. **Verify & publish** - a follow-up sample must confirm the fix; only then does a dated public QR record go live
 
-- an inspection is not presented as a laboratory result;
-- a rejected sample cannot satisfy verification;
-- completed repair does not automatically resolve an incident;
-- corrections preserve earlier results, reasons, actors, and timestamps;
-- unresolved concerns cannot be hidden behind a friendly status;
-- public records state when data is missing, outdated, unverified, or limited in scope;
-- private reporter details and unreviewed files stay out of public views; and
-- no status says that water is safe.
+> **Honest by design:** TankLoop is not a sensor, lab, or regulator. It never says water is "safe" - it shows what was checked, when, by whom, and what is still unresolved.
 
-These are product and governance requirements, not claims that the full system is already deployed or validated.
+## What makes it different
 
-## Architecture and technology
+Most dashboards show green when work is "done." TankLoop refuses to:
 
-<!-- Blueprint p.15–16: proposed architecture and monorepo boundaries. -->
+- show an inspection as if it were a lab result;
+- let a rejected sample close a verification;
+- auto-resolve an incident just because a repair was marked complete;
+- hide an open concern behind a friendly status;
+- publish a record without stating what is missing, outdated, or unverified.
 
-TankLoop is planned as a Flutter and Supabase system with typed domain boundaries:
+Every correction keeps the old result, the reason, and who changed it. Public records state their own limits.
 
-- **Flutter + Dart** for mobile and responsive web experiences
-- **Riverpod** for state and dependency injection
-- **go_router** for navigation and guarded deep links
-- **Drift over SQLite** for relational offline persistence and queued commands
-- **Supabase PostgreSQL** for cloud data with tenant-scoped Row Level Security
-- **Supabase Auth and Storage** for sessions and access-controlled evidence
-- **Edge Functions and constrained RPCs** for privileged transitions, public projections, audit, and notifications
+## Tech stack
 
-The intended monorepo layout is:
+- **Flutter + Dart** - one codebase for Android and responsive web
+- **Supabase** - Postgres with row-level security, Auth, Storage, RPCs for privileged transitions
+- **Riverpod + go_router + Drift/SQLite** - state management, navigation, offline-first local persistence with a sync outbox
+- **Monorepo** - shared domain, design system, and data packages across all apps
+
+## Repository layout
 
 ```text
 tankloop/
   apps/
-    field_app/               # Flutter Android-first experience
-    portal_web/              # Flutter Web role-aware experience
+    field_app/          # Flutter Android app (inspections, QR, evidence)
+    portal_web/         # Flutter web app (Verify / Manage / Lab views)
   packages/
-    design_system/           # tokens, widgets, typography
-    domain/                  # entities, states, use cases
-    data/                    # repositories and adapters
-    offline_sync/            # outbox and conflict resolution
-    shared_forms/            # schema-driven inspection forms
-    localization/            # language resources
+    design_system/  domain/  data/  offline_sync/  shared_forms/  localization/
   supabase/
-    migrations/              # versioned SQL and RLS policies
-    functions/               # privileged transitions and public reads
-    tests/                   # authorization and RLS checks
-  docs/
-    submission/              # public submission materials
+    migrations/      # schema, RLS policies, state machines
+    functions/       # privileged transitions, public projections
+    tests/           # authorization and RLS checks
+  docs/               # architecture, API, development, submission materials
 ```
 
-### Architecture diagrams
-
-The diagrams below describe the **planned** architecture; they do not claim that every surface or integration is already built. See the [full architecture notes](docs/architecture.md) for boundaries, state machines, and data model detail.
+## Architecture at a glance
 
 ```mermaid
 flowchart LR
-  clients["Flutter clients<br/>Field Android · Manage web · Verify public web · Lab web"]
-  repos["Typed repositories<br/>and domain commands"]
-  local["Local-first layer<br/>Riverpod · Drift · sync outbox"]
-  supabase["Supabase<br/>Auth · Postgres + RLS · Storage<br/>Edge Functions · Realtime"]
-  partners["External partners<br/>qualified labs · notification providers<br/>authorized institution systems"]
-  clients --> repos --> local --> supabase --> partners
+  field["Field app<br/>offline-first"] --> supa["Supabase<br/>Auth · Postgres + RLS<br/>Storage · RPCs"]
+  portal["Portal web<br/>Verify · Manage · Lab"] --> supa
+  supa --> public["Public QR record<br/>dated, limited, honest"]
 ```
 
-```mermaid
-flowchart LR
-  save["LOCAL SAVE"] --> outbox["OUTBOX"] --> upload["UPLOAD + AUTH"] --> ack["SERVER ACK"] --> refresh["REFRESH"]
-```
+Offline sync path: `local save → outbox → upload → server ack → refresh`. Field work survives dead zones and syncs when connectivity returns.
 
-```mermaid
-stateDiagram-v2
-  state "Result" as Result {
-    [*] --> collected
-    collected --> received
-    received --> valid
-    received --> rejected
-    valid --> tested
-    tested --> reviewed
-    reviewed --> published
-    published --> superseded
-  }
-  state "Work order" as WorkOrder {
-    [*] --> proposed
-    proposed --> approval_pending
-    approval_pending --> assigned
-    assigned --> in_progress
-    in_progress --> completed
-    completed --> accepted
-    completed --> rework
-  }
-  state "Incident" as Incident {
-    [*] --> reported
-    reported --> triaged
-    triaged --> incident_assigned
-    incident_assigned --> mitigation_work
-    mitigation_work --> verification_pending
-    verification_pending --> resolved
-    resolved --> reopened
-  }
-```
+Core state machines (enforced in SQL, not just UI):
 
-```mermaid
-erDiagram
-  ORGANIZATION ||--o{ FACILITY : owns
-  FACILITY ||--o{ WATER_SYSTEM : contains
-  WATER_SYSTEM ||--o{ ASSET : has
-  WATER_SYSTEM ||--o{ SAMPLING_POINT : exposes
-  SAMPLING_POINT ||--o{ INSPECTION : receives
-  SAMPLING_POINT ||--o{ SAMPLE : produces
-  SAMPLE ||--o{ CUSTODY_EVENT : records
-  SAMPLE ||--o{ TEST_RESULT : yields
-  TEST_RESULT ||--o{ INCIDENT : may_trigger
-  INCIDENT ||--o{ WORK_ORDER : assigns
-  INCIDENT ||--o{ VERIFICATION_REQUIREMENT : requires
-  FACILITY ||--o{ PUBLIC_RECORD : publishes
-```
+- **Sample result:** collected → received → valid/rejected → tested → reviewed → published → superseded
+- **Work order:** proposed → approval → assigned → in progress → completed → accepted/rework
+- **Incident:** reported → triaged → assigned → mitigation → verification pending → resolved (reopenable)
 
-```mermaid
-flowchart TB
-  root["tankloop/"] --> apps["apps/"]
-  root --> packages["packages/"]
-  root --> supa["supabase/"]
-  root --> docs["docs/"]
-  apps --> field["field_app/"]
-  apps --> portal["portal_web/"]
-  packages --> design["design_system/"]
-  packages --> domain["domain/"]
-  packages --> data["data/"]
-  packages --> sync["offline_sync/"]
-  packages --> forms["shared_forms/"]
-  packages --> i18n["localization/"]
-  supa --> migrations["migrations/"]
-  supa --> functions["functions/"]
-  supa --> tests["tests/"]
-  docs --> submission["submission/"]
-  classDef planned fill:#fff0df,stroke:#9c5b13,color:#102a43
-  class root,apps,packages,supa,docs,field,portal,design,domain,data,sync,forms,i18n,migrations,functions,tests,submission planned
-```
+See [docs/architecture.md](docs/architecture.md) for the full data model and trust boundaries.
 
-## Project status and roadmap
+## Honest status
 
-This repository is an active challenge prototype and design proposal, not a production water-quality service. The current priority is a dependable vertical demonstration with clearly labeled simulated records and explicit trust boundaries.
+This is a working challenge prototype with a live backend - not a production water-quality service.
 
-Planned sequence:
+- **Live:** portal, Android APK, Supabase backend, public QR verification
+- **Real:** auth, RLS tenant isolation, offline sync, audit-preserving corrections
+- **Prototype limits:** single deployment, synthetic seed data for demos, no certified lab integrations yet
+- **Never:** claims of measured water safety, treatment advice, or regulator functions
 
-1. Implement and test domain entities, state machines, and transition invariants.
-2. Establish the shared design system and inspection forms.
-3. Add a local-first data path and offline draft behavior.
-4. Build the field inspection and manager incident workflow.
-5. Add the public QR record with mandated limitation language.
-6. Integrate Supabase authentication, RLS, storage, and privileged transitions.
-7. Validate with facilities, qualified laboratories, residents, offline devices, and a paper or messaging baseline.
+## Development
 
-Real deployment would additionally require operational partners, agreed sampling methods, privacy and retention review, regulatory review, and sustained support. The proposed impact metrics are workflow measures, not a composite water-safety score.
-
-## Challenge context
-
-TankLoop is being prepared for the **Xylem Global Student Innovation Challenge 2026**. The project page, live physical demonstration, and evidence appendix distinguish source-backed context, design decisions, research gates, and simulated records. See [`docs/submission/`](docs/submission/) for the current public-facing materials.
-
-## Getting started
-
-Field and Portal (Verify, Manage and Lab) are runnable with Flutter **3.47.9** (Dart **3.13.7**). From the repository root:
+Requires Flutter **3.47.9** (stable).
 
 ```sh
 flutter pub get
+
+# Portal (web)
+(cd apps/portal_web && flutter run -d web-server --web-port 8081)
+
+# Field app
+(cd apps/field_app && flutter run --dart-define-from-file=/path/to/.env)
 ```
 
-Run each app in its own terminal:
+Copy `.env.example` to `.env` and fill in Supabase values (`supabase status` after `supabase start` for local dev). Build a release APK with:
 
 ```sh
-(cd apps/field_app && flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8080)
+(cd apps/field_app && flutter build apk --release --dart-define-from-file=/path/to/.env.production)
 ```
 
-```sh
-(cd apps/portal_web && flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8081)
-```
+See [docs/development.md](docs/development.md) for backend setup, test accounts, and commands.
 
-Field requires `SUPABASE_URL` and `SUPABASE_ANON_KEY`, a signed-in account, and an active facility membership. It uses only the live Supabase runtime and does not display synthetic records. Follow [local backend setup](docs/development.md#local-supabase) and pass the configuration file when running Field:
+## Documentation
 
-```sh
-(cd apps/field_app && flutter run --dart-define-from-file=/absolute/path/to/tankloop/.env)
-```
-
-Pull down from the top of any Field tab to reload assignments. Drafts and queued work stay on the device across restarts; **Profile > Pause sync** pauses uploads until resumed. The generated local seed contains no real water observations, so Field shows empty states rather than fixture results. Legacy exercise caches are withheld offline and exercise drafts are archived locally without uploading them as field work.
-
-[Verify](http://127.0.0.1:8081) retains its standalone deterministic simulation with seed `20261101`, day `10`. No account or backend is required for that Portal mode. Connected Portal and Field use the same backend, with provenance retained on Portal exercise records.
-
-Open [Lab](http://127.0.0.1:8081/#/lab) for generated sample, custody and result playback. Connected intake, authorized attestation and immutable corrections use a scoped Lab account and Supabase RPCs; see the [Lab workflow guide](docs/lab-portal.md).
-
-For the physical demonstration, [generate printable A4 QR stickers](docs/public-verify.md) from the simulator's water points. Verify also supports private anonymous concerns, shareable text-first links and printable dated records.
-
-Open [Manage](http://127.0.0.1:8081/#/manager) for facility/network details, submitted inspections, sample/result provenance, scoped team assignments and guarded response actions. Connected mode supports manager/admin sign-in and authorized facility selection; see [manager setup and workflow](docs/development.md#manager-workspace).
-
-See [development commands and hosted inputs](docs/development.md), [implementation details](docs/implementation.md), and [delivery scope and known limitations](docs/delivery.md) for the current slice.
-
-## Submission materials
-
-- [Public project page](docs/submission/project-page.md)
-- [Evidence appendix outline](docs/submission/evidence-appendix.md)
+- [Architecture & data model](docs/architecture.md)
+- [API reference](docs/api.md)
+- [Field app guide](docs/field-android.md)
+- [Lab portal workflow](docs/lab-portal.md)
+- [Public verify & QR stickers](docs/public-verify.md)
+- [Delivery scope & known limitations](docs/delivery.md)
+- [Submission materials](docs/submission/)
