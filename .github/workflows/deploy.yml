@@ -33,7 +33,7 @@ jobs:
           flutter build web --release --no-pub \
             --dart-define=TANKLOOP_MODE=supabase \
             --dart-define=SUPABASE_URL=https://cgantplwxnouuhymklqs.supabase.co \
-            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnYW50cGx3eG5vdXVoeW1rbHFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0MTI2NjksImV4cCI6MjEwOTk4ODY2OX0.j9aJ4zbdgjcJngUxbxOLKlRbq4ZAtbXnlcN_Ugs7tIU \
+            --dart-define=SUPABASE_ANON_KEY=sb_publishable_shBkszuCw-uTuPV2y9XAFw_f9W_nHxT \
             --dart-define=PORTAL_BASE_URL=https://tankloop.pages.dev
           cp web/_redirects build/web/
 
