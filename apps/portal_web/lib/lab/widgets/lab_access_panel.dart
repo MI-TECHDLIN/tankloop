@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'lab_form_support.dart';
@@ -106,6 +107,10 @@ class _LabAccessPanelState extends State<LabAccessPanel> {
           FilledButton(
             onPressed: busy ? null : signIn,
             child: Text(busy ? 'Signing in...' : 'Sign in'),
+          ),
+          TextButton(
+            onPressed: () => context.go('/signup'),
+            child: const Text('New to TankLoop? Create an account'),
           ),
         ],
       ),

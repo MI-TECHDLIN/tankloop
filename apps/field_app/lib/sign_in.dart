@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tankloop_design_system/design_system.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key});
+  const SignInScreen({super.key, this.portalBaseUrl = 'http://localhost:8081'});
+  final String portalBaseUrl;
   @override
   State<SignInScreen> createState() => SignInScreenState();
 }
@@ -47,6 +49,21 @@ class SignInScreenState extends State<SignInScreen> {
       }
     } finally {
       if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _openSignup() async {
+    final url =
+        '${widget.portalBaseUrl.replaceFirst(RegExp(r'/+$'), '')}/#/signup';
+    try {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => error =
+              'Could not open the account page. Visit $url in your browser.',
+        );
+      }
     }
   }
 
@@ -135,6 +152,12 @@ class SignInScreenState extends State<SignInScreen> {
                             FilledButton(
                               onPressed: busy ? null : submit,
                               child: Text(busy ? 'Signing in…' : 'Sign in'),
+                            ),
+                            TextButton(
+                              onPressed: busy ? null : _openSignup,
+                              child: const Text(
+                                'New to TankLoop? Create an account',
+                              ),
                             ),
                           ],
                         ),

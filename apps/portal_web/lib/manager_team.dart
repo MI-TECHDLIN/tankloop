@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'package:tankloop_domain/domain.dart';
 import 'package:tankloop_localization/localization.dart';
+import 'manager_access_requests.dart';
 import 'manager_controller.dart';
 import 'manager_screen_states.dart';
 import 'manager_widgets.dart';
 
 class ManagerTeamScreen extends StatefulWidget {
-  const ManagerTeamScreen({super.key, required this.controller});
+  const ManagerTeamScreen({super.key, required this.controller, this.client});
   final ManagerController controller;
+  final SupabaseClient? client;
   @override
   State<ManagerTeamScreen> createState() => _ManagerTeamScreenState();
 }
@@ -64,6 +67,19 @@ class _ManagerTeamScreenState extends State<ManagerTeamScreen> {
                 'Invites, revocations and role changes are provisioned by the organization administrator. Review scoped memberships and accountable work below.',
             icon: Icons.admin_panel_settings_outlined,
           ),
+          const SizedBox(height: 16),
+          if (widget.client != null &&
+              data.members.any(
+                (m) =>
+                    m.userId == data.actorId &&
+                    m.role == Role.admin &&
+                    m.activeAt(data.fetchedAt),
+              ))
+            AccessRequestsPanel(
+              client: widget.client!,
+              facilityId: data.facility.id,
+              onChanged: widget.controller.refresh,
+            ),
           const SizedBox(height: 16),
           TextField(
             controller: search,

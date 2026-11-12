@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tankloop_data/data.dart';
 import 'package:tankloop_design_system/design_system.dart';
@@ -91,6 +92,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
         listenable: controller,
         builder: (context, _) => ManagerShell(
           controller: controller,
+          accessClient: widget.authClient,
           selected: selected,
           onSelected: (value) => setState(() => selected = value),
           accountAction: widget.authClient?.auth.currentUser == null
@@ -105,10 +107,19 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
               ? null
               : widget.authClient!.auth.currentUser == null
               ? _ManagerSignIn(client: widget.authClient!)
-              : const NoticeCard(
-                  title: 'Manager assignment required',
-                  message:
-                      'Ask the organization administrator for an active manager or administrator membership. Refresh after it is assigned, or sign out to use a different account.',
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const NoticeCard(
+                      title: 'Manager assignment required',
+                      message:
+                          'Ask the organization administrator for an active manager or administrator membership. Refresh after it is assigned, or sign out to use a different account.',
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/signup'),
+                      child: const Text('Request facility access'),
+                    ),
+                  ],
                 ),
         ),
       ),
@@ -214,6 +225,10 @@ class _ManagerSignInState extends State<_ManagerSignIn> {
             FilledButton(
               onPressed: busy ? null : signIn,
               child: Text(busy ? 'Signing in...' : 'Sign in'),
+            ),
+            TextButton(
+              onPressed: () => context.go('/signup'),
+              child: const Text('New to TankLoop? Create an account'),
             ),
           ],
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tankloop_design_system/design_system.dart';
 import 'manager_approvals.dart';
 import 'manager_catalog.dart';
@@ -20,12 +21,14 @@ class ManagerShell extends StatelessWidget {
     required this.onSelected,
     this.accountAction,
     this.accessPanel,
+    this.accessClient,
   });
   final ManagerController controller;
   final int selected;
   final ValueChanged<int> onSelected;
   final Widget? accountAction;
   final Widget? accessPanel;
+  final SupabaseClient? accessClient;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +41,10 @@ class ManagerShell extends StatelessWidget {
       4 => ManagerSamplesScreen(controller: controller),
       5 => ManagerApprovalsScreen(controller: controller),
       6 => ManagerReportsScreen(controller: controller),
-      7 => ManagerTeamScreen(controller: controller),
+      7 => ManagerTeamScreen(
+        controller: controller,
+        client: accessClient,
+      ),
       _ => ManagerSettingsScreen(controller: controller),
     };
     return LayoutBuilder(

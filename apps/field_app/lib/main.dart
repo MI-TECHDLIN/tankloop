@@ -118,7 +118,7 @@ class _FieldBootstrapState extends State<FieldBootstrap> {
         title: 'TankLoop Field',
         debugShowCheckedModeBanner: false,
         theme: tankLoopTheme(),
-        home: const SignInScreen(),
+        home: SignInScreen(portalBaseUrl: widget.config.portalBaseUrl),
       );
     }
     return FutureBuilder(

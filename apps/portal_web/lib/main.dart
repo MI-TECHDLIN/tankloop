@@ -9,6 +9,7 @@ import 'package:tankloop_domain/domain.dart';
 import 'lab/lab_routes.dart';
 import 'manager_dashboard.dart';
 import 'public_point.dart';
+import 'signup.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,6 +80,24 @@ class _PortalAppState extends State<PortalApp> {
         : null,
     routes: [
       GoRoute(path: '/', builder: (_, _) => const TokenEntry()),
+      GoRoute(
+        path: '/signup',
+        builder: (_, _) => TankBackdrop(
+          child: Scaffold(
+            body: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: AccessSignupScreen(
+                    client: simulation == null ? Supabase.instance.client : null,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
       ...labRoutes(
         labRepository,
         authClient: simulation == null ? Supabase.instance.client : null,
@@ -212,6 +231,10 @@ class _TokenEntryState extends State<TokenEntry> {
                   FilledButton(
                     onPressed: open,
                     child: const Text('Open point record'),
+                  ),
+                  TextButton(
+                    onPressed: () => context.go('/signup'),
+                    child: const Text('Staff or partner? Sign in or create an account'),
                   ),
                 ],
               ),
