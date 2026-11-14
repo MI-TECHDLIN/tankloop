@@ -41,10 +41,7 @@ class ManagerShell extends StatelessWidget {
       4 => ManagerSamplesScreen(controller: controller),
       5 => ManagerApprovalsScreen(controller: controller),
       6 => ManagerReportsScreen(controller: controller),
-      7 => ManagerTeamScreen(
-        controller: controller,
-        client: accessClient,
-      ),
+      7 => ManagerTeamScreen(controller: controller, client: accessClient),
       _ => ManagerSettingsScreen(controller: controller),
     };
     return LayoutBuilder(

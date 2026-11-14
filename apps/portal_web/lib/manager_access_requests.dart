@@ -80,7 +80,9 @@ class _AccessRequestsPanelState extends State<AccessRequestsPanel> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('The decision could not be recorded. Refresh and retry.'),
+            content: Text(
+              'The decision could not be recorded. Refresh and retry.',
+            ),
           ),
         );
       }
@@ -97,9 +99,7 @@ class _AccessRequestsPanelState extends State<AccessRequestsPanel> {
         title: const Text('Reject access request'),
         content: TextField(
           controller: reason,
-          decoration: const InputDecoration(
-            labelText: 'Reason (required)',
-          ),
+          decoration: const InputDecoration(labelText: 'Reason (required)'),
           maxLines: 3,
         ),
         actions: [
@@ -127,13 +127,22 @@ class _AccessRequestsPanelState extends State<AccessRequestsPanel> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Center(child: CircularProgressIndicator()),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Semantics(
+          label: 'Loading access requests',
+          liveRegion: true,
+          child: const ExcludeSemantics(
+            child: FrostedSkeletonCard(lines: 1, showIcon: false),
+          ),
+        ),
       );
     }
     if (error != null) {
-      return Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error));
+      return Text(
+        error!,
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
+      );
     }
     if (requests.isEmpty) return const SizedBox.shrink();
     return Column(

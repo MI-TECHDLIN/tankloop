@@ -48,9 +48,15 @@ Startup applies the repository migrations and generated seed. `supabase status` 
 
 `supabase db reset` reapplies migrations and seed to a **fresh local database**, replacing local records and Auth users. Use it when intentionally resetting the exercise. The seeded database has a fixed simulated clock used by Portal exercise records. Field uses the current clock and excludes synthetic records, even when membership belongs to a seeded facility. Membership expiry uses actual server time.
 
+### Self-service demo access
+
+Open `/#/signup` on the Portal origin to create an account and request `field`, `manager` or `lab` access. Only facilities marked `is_simulated` are listed for self-service; those requests are approved immediately and create the scoped membership in the same transaction. A direct request for a non-simulated facility remains `pending` for an organization administrator through `review_access_request`. The administrator role is never self-service.
+
+This path needs no manual membership SQL for the simulated demo tenant. After approval, use the matching Portal workspace for manager/lab access or return to the Field app and sign in with the same account.
+
 ### Create a usable Field account
 
-The synthetic seed actors have no passwords or sessions. Use local Studio at `http://127.0.0.1:54323` to create and confirm your own email/password Auth user. In its SQL editor, provision a field membership, substituting the created user's UUID:
+For the quickest local check, use the self-service signup path above. The synthetic seed actors have no passwords or sessions. Use local Studio at `http://127.0.0.1:54323` to create and confirm your own email/password Auth user when testing the older manual provisioning path. In its SQL editor, provision a field membership, substituting the created user's UUID:
 
 ```sql
 insert into public.memberships
@@ -145,7 +151,7 @@ The captain must provide a dedicated Supabase project reference, project URL, **
 
 1. Link the intended project and apply migrations with `supabase db push --remote`. Supabase CLI v3 targets the local database unless `--remote` is explicit.
 2. For a dedicated empty demonstration project, load `supabase/seed.sql` through its trusted SQL connection. This creates synthetic Auth identities as well as tenant data. Do not apply it over an existing dataset.
-3. Provision separate real Auth accounts for the team and scoped `field`, `manager` or `lab` memberships. Seed actors cannot sign in.
+3. For the simulated demo tenant, team members can self-register at `/#/signup`; requests for `is_simulated` facilities approve immediately. Keep trusted provisioning for real facilities and any organization administrator accounts.
 4. Configure the Auth site/redirect URLs for the hosted Field origin, build both clients with the project URL/client-safe key, and set Field's `PORTAL_BASE_URL` to hosted Verify.
 5. Deploy the two `build/web` directories to HTTPS static hosting. Issue or print point links using their opaque tokens. Keep the simulated labeling visible.
 

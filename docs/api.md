@@ -2,6 +2,10 @@
 
 Supabase exposes these functions under `/rest/v1/rpc/<function>`. Use the publishable/anon key and, for commands, the signed-in user's bearer session. SQL in `supabase/migrations/` is the authoritative signature and authorization contract. Edge Functions are not required for this slice.
 
+## Access requests
+
+`list_joinable_facilities()` requires an authenticated session and returns the simulated facilities open to self-service access. `request_access` accepts `p_facility_id` and `p_role` (`field`, `manager` or `lab`; `admin` is rejected). Requests for `is_simulated` facilities are approved immediately and create the scoped membership in the same transaction; a direct request for a non-simulated facility remains `pending`. `review_access_request` accepts `p_request_id`, `p_approve` and optional `p_reason`, and requires an organization administrator who is not deciding their own request.
+
 ## Application path
 
 ### `submit_inspection`

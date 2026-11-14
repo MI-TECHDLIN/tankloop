@@ -90,7 +90,9 @@ class _PortalAppState extends State<PortalApp> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 480),
                   child: AccessSignupScreen(
-                    client: simulation == null ? Supabase.instance.client : null,
+                    client: simulation == null
+                        ? Supabase.instance.client
+                        : null,
                   ),
                 ),
               ),
@@ -234,7 +236,9 @@ class _TokenEntryState extends State<TokenEntry> {
                   ),
                   TextButton(
                     onPressed: () => context.go('/signup'),
-                    child: const Text('Staff or partner? Sign in or create an account'),
+                    child: const Text(
+                      'Staff or partner? Sign in or create an account',
+                    ),
                   ),
                 ],
               ),
